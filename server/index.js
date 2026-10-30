@@ -5,8 +5,15 @@ import { Server } from "socket.io";
 
 const PORT = process.env.PORT || 3001;
 
+// Comma-separated list of allowed frontend origins, e.g.
+// "https://couchcrew.vercel.app,http://localhost:5173". Defaults to "*" so
+// local dev keeps working with no setup.
+const allowedOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(",").map((o) => o.trim())
+  : "*";
+
 const app = express();
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
@@ -15,7 +22,7 @@ app.get("/health", (_req, res) => {
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: "*" },
+  cors: { origin: allowedOrigins },
 });
 
 // roomId -> Map<socketId, { name }>
