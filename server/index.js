@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { createServer } from "node:http";
@@ -18,6 +19,65 @@ app.use(express.json());
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+// Maps a CouchCrew roomId to a Daily.co video room, creating one on first
+// use. The Daily API key stays server-side only — Job 2 (VideoPanel) calls
+// this instead of talking to Daily's room-management API directly.
+const DAILY_API_KEY = process.env.DAILY_API_KEY;
+const dailyRoomUrlByRoomId = new Map();
+
+app.post("/daily/room", async (req, res) => {
+  const { roomId } = req.body || {};
+  if (!roomId) {
+    return res.status(400).json({ error: "roomId is required" });
+  }
+  if (!DAILY_API_KEY) {
+    return res.status(500).json({ error: "DAILY_API_KEY is not configured on the server" });
+  }
+
+  const cached = dailyRoomUrlByRoomId.get(roomId);
+  if (cached) return res.json({ url: cached });
+
+  const dailyRoomName = `couchcrew-${roomId}`;
+  const authHeader = { Authorization: `Bearer ${DAILY_API_KEY}` };
+
+  try {
+    // A server restart loses the in-memory cache above, so check whether
+    // Daily already has this room before trying to create it again.
+    const existing = await fetch(`https://api.daily.co/v1/rooms/${dailyRoomName}`, {
+      headers: authHeader,
+    });
+    if (existing.ok) {
+      const data = await existing.json();
+      dailyRoomUrlByRoomId.set(roomId, data.url);
+      return res.json({ url: data.url });
+    }
+
+    const created = await fetch("https://api.daily.co/v1/rooms", {
+      method: "POST",
+      headers: { ...authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: dailyRoomName,
+        properties: {
+          // Auto-expire 6 hours after creation so stale rooms don't pile up
+          // in the Daily dashboard.
+          exp: Math.round(Date.now() / 1000) + 6 * 60 * 60,
+        },
+      }),
+    });
+
+    if (!created.ok) {
+      const errText = await created.text();
+      return res.status(502).json({ error: `Daily API error: ${errText}` });
+    }
+
+    const data = await created.json();
+    dailyRoomUrlByRoomId.set(roomId, data.url);
+    res.json({ url: data.url });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to reach Daily API" });
+  }
 });
 
 const httpServer = createServer(app);
