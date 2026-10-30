@@ -12,18 +12,19 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 **What we decided:**
 - Adrian takes Job 1 (Rooms, Chat & Realtime Backbone) — continuity, since he
   built the initial scaffold and already knows that code.
-- The other two team slots are assigned to Job 2 (Audio/Video/Screen Share)
-  and Job 3 (Synced Watch Party Playback) as placeholders ("Teammate B",
-  "Teammate C") since names weren't finalized yet. Whoever those two people
-  are, assignment order doesn't matter — swap freely once real names/
-  preferences are known, as long as `CLAUDE.md` is updated to match.
+- Team confirmed: **Henry** takes Job 2 (Audio/Video/Screen Share), **John**
+  takes Job 3 (Synced Watch Party Playback). `CLAUDE.md` updated to match.
+- `ONBOARDING.md` was sent to Henry and John to give their own Claude Code
+  sessions full context on the course assignment and the project, without
+  dictating how they build their piece.
 
 **Open items:**
-- Replace the placeholder names in `CLAUDE.md`'s Team section with the real
-  teammates once confirmed.
-- Each person should pull their feature branch (`feature/video-av` or
-  `feature/watch-sync`) and start from the file list in their job's section
-  of `CLAUDE.md`.
+- Henry and John to clone the repo, check out `feature/video-av` and
+  `feature/watch-sync` respectively, and start building.
+- Daily.co account/API key not yet created — needed before Job 2 can start
+  for real.
+- No deployment yet (frontend/backend hosting) — scaffold currently only
+  runs locally.
 
 ---
 
