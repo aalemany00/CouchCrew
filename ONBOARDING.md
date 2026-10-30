@@ -28,6 +28,25 @@ Before writing any code or making any technical decisions:
    fixed; everything about *how* to get there is theirs to decide — don't
    assume an implementation for them.
 
+**This also applies mid-session, not just at the start.** There is no
+direct channel between this Claude Code session and Adrian's, Henry's, or
+John's — the only shared source of truth is this GitHub repo. So:
+
+- **Before telling your human to ask Adrian something, or assuming a piece
+  of backend/shared infrastructure doesn't exist yet: run `git pull origin
+  main` and re-read `CLAUDE.md` and `server/index.js` first.** The thing
+  you need may already be built and merged — these files are kept current
+  as the team's actual coordination mechanism, not just initial context.
+  Routing a question through two humans copy-pasting between two Claude
+  sessions is slow and wastes everyone's time when the repo already has
+  the answer.
+- Only surface a question to your human for Adrian if the repo genuinely
+  doesn't answer it (e.g. a real design decision, or something that needs
+  a secret/credential only Adrian can set).
+- If you do build something that touches a file outside your job's owned
+  files (per the Job section below), say so explicitly in your PR
+  description so it's easy to spot during review.
+
 ---
 
 ## What this assignment requires (TCSS 490, Artifact 4: "For Someone Else")
@@ -100,6 +119,23 @@ networking problems) rather than building raw peer-to-peer WebRTC from
 scratch, so the team's time goes into the actual product instead of
 signaling/NAT-traversal plumbing. If you look into it and have a good reason
 to prefer something else, that's a real option — just log the decision.
+
+**Already built and live, don't rebuild it:** a `POST /daily/room` endpoint
+on the server maps a CouchCrew `roomId` to a real Daily.co video room,
+creating one on first use. The Daily API key lives server-side only
+(Adrian manages it in Render's environment variables) — never call Daily's
+API directly from the client. Call it like this:
+```js
+const res = await fetch(`${SERVER_URL}/daily/room`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ roomId }),
+});
+const { url } = await res.json(); // pass this into Daily's embed/hooks
+```
+This is live on the deployed backend right now (verified working) — you
+don't need your own Daily API key to build against it, and you don't need
+to touch `server/index.js`.
 
 **Yours to decide:** what the video grid looks like, how controls are laid
 out, how it behaves on a phone screen, how you handle someone with no
