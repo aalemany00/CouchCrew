@@ -119,6 +119,13 @@ button.secondary.leave {
   overflow-y: auto;
 }
 
+.chat-log li.system {
+  color: #6b6f85;
+  font-style: italic;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .chat-panel form {
   display: flex;
   gap: 0.5rem;
