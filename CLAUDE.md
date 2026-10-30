@@ -5,6 +5,14 @@ team members so each person's Claude Code session has the same context — the
 agents don't talk to each other, so this document is the thing that keeps
 everyone's work compatible.
 
+## Team
+
+- **Adrian** — Job 1 (Rooms, Chat & Realtime Backbone)
+- **Teammate B** — Job 2 (Audio/Video/Screen Share) — real name TBD, update this
+  file once confirmed
+- **Teammate C** — Job 3 (Synced Watch Party Playback) — real name TBD, update
+  this file once confirmed
+
 ## What this is
 
 A watch-party site: any number of people join a room link/code and get text
@@ -51,7 +59,7 @@ possible future work, not required here.
 Each is a real, demoable vertical slice. Work in a feature branch per job;
 open a PR into `main`; at least one other teammate reviews before merging.
 
-### Job 1 — Rooms, Chat & Realtime Backbone
+### Job 1 — Rooms, Chat & Realtime Backbone (Adrian)
 - Owns: `server/index.js` (room join/leave, presence, chat relay, the
   `sync:event` relay other jobs broadcast through), `client/src/components/ChatPanel.jsx`,
   `client/src/components/RoomView.jsx`, `client/src/components/JoinScreen.jsx`.
@@ -59,7 +67,7 @@ open a PR into `main`; at least one other teammate reviews before merging.
   expect to pair with Jobs 2 and 3 at integration time.
 - Branch: `feature/rooms-chat`
 
-### Job 2 — Audio/Video/Screen Share
+### Job 2 — Audio/Video/Screen Share (Teammate B — name TBD)
 - Owns: `client/src/components/VideoPanel.jsx`. Integrate Daily.co
   (`@daily-co/daily-react` + `@daily-co/daily-js`) for a mic/camera tile grid
   and a screen-share control. Must be usable on a phone browser.
@@ -67,7 +75,7 @@ open a PR into `main`; at least one other teammate reviews before merging.
   one person screen-shares their tab.
 - Branch: `feature/video-av`
 
-### Job 3 — Synced Watch Party Playback
+### Job 3 — Synced Watch Party Playback (Teammate C — name TBD)
 - Owns: `client/src/components/WatchPlayer.jsx`. Embed the YouTube IFrame
   Player API; emit/listen for `sync:event` (via the socket client in
   `client/src/lib/socket.js`) so play/pause/seek stay in sync across the room.

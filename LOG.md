@@ -5,6 +5,28 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-29 — Job assignment
+
+**Who:** Adrian, with Claude Code.
+
+**What we decided:**
+- Adrian takes Job 1 (Rooms, Chat & Realtime Backbone) — continuity, since he
+  built the initial scaffold and already knows that code.
+- The other two team slots are assigned to Job 2 (Audio/Video/Screen Share)
+  and Job 3 (Synced Watch Party Playback) as placeholders ("Teammate B",
+  "Teammate C") since names weren't finalized yet. Whoever those two people
+  are, assignment order doesn't matter — swap freely once real names/
+  preferences are known, as long as `CLAUDE.md` is updated to match.
+
+**Open items:**
+- Replace the placeholder names in `CLAUDE.md`'s Team section with the real
+  teammates once confirmed.
+- Each person should pull their feature branch (`feature/video-av` or
+  `feature/watch-sync`) and start from the file list in their job's section
+  of `CLAUDE.md`.
+
+---
+
 ## 2026-10-29 — Scoping and scaffold
 
 **Who:** Adrian, with Claude Code (planning session covered Artifact 4 only).
