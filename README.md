@@ -39,6 +39,11 @@ cp .env.example .env
 npm run dev         # http://localhost:5173
 ```
 
+To test video/screen-share locally, the server also needs a `DAILY_API_KEY`
+env var (a free Daily.co account's API key) — set it in `server/.env` or
+export it before `npm run dev`. Without it, `/daily/room` returns a clear
+500 error instead of silently failing.
+
 ## Live
 
 - Frontend: https://couch-crew.vercel.app

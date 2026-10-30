@@ -5,6 +5,36 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Daily.co room endpoint for Job 2
+
+**Who:** Adrian, with Claude Code, on `feature/daily-room-endpoint`.
+
+**Context:** Henry's Claude session asked how a CouchCrew `roomId` should
+map to a Daily.co video room, and laid out three options. We picked the
+"correct end state" one (a server endpoint, one Daily room per CouchCrew
+room) over the faster single-shared-room option, since it's not much more
+work and avoids every room sharing one video call.
+
+**What we built:** `POST /daily/room` on the server — takes `{ roomId }`,
+creates or reuses a Daily room for it, returns the join URL. The Daily API
+key stays server-side (`DAILY_API_KEY` env var, via `dotenv` locally /
+Render's dashboard in production) so it's never exposed in client code.
+Built this ourselves rather than having Henry edit `server/index.js`
+directly, since two people editing the same file on separate branches is
+exactly the collision the course's branch/PR process is meant to avoid.
+
+**Verified:** missing `roomId` → 400, missing API key → clear 500 (not a
+silent failure), and a test key correctly round-tripped to Daily's real API
+and surfaced their auth error — confirms the full path works; just needs
+Henry's real API key to actually create rooms.
+
+**Open items:**
+- Henry needs his own free Daily.co account/API key. The key is a server
+  secret — give it to Adrian directly (not in the group chat) to set as
+  `DAILY_API_KEY` on Render, rather than Henry having Render access himself.
+
+---
+
 ## 2026-10-30 — Room UX: shareable links, leave, persistence (Job 1)
 
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
