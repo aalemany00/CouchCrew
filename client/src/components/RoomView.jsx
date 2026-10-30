@@ -4,9 +4,21 @@ import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
 
-export default function RoomView({ roomId, name }) {
+export default function RoomView({ roomId, name, onLeave }) {
   const [members, setMembers] = useState([]);
   const [connected, setConnected] = useState(socket.connected);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  async function copyInviteLink() {
+    const url = `${window.location.origin}/r/${roomId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this link to invite someone:", url);
+    }
+  }
 
   useEffect(() => {
     // Re-sends room:join on every connect, not just the first one, so a
@@ -46,7 +58,17 @@ export default function RoomView({ roomId, name }) {
   return (
     <div className="room-view">
       <header>
-        <h1>Room: {roomId}</h1>
+        <div className="room-header-top">
+          <h1>Room: {roomId}</h1>
+          <div className="room-header-actions">
+            <button type="button" className="secondary" onClick={copyInviteLink}>
+              {linkCopied ? "Link copied!" : "Copy invite link"}
+            </button>
+            <button type="button" className="secondary leave" onClick={onLeave}>
+              Leave room
+            </button>
+          </div>
+        </div>
         {connected ? (
           <p>{members.length} watching: {members.map((m) => m.name).join(", ")}</p>
         ) : (

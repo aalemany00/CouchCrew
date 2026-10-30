@@ -1,20 +1,59 @@
 import { useState } from "react";
+import { generateRoomCode } from "../lib/roomCode";
 
-export default function JoinScreen({ onJoin }) {
-  const [name, setName] = useState("");
+function getSavedName() {
+  try {
+    return localStorage.getItem("couchcrew:name") || "";
+  } catch {
+    return "";
+  }
+}
+
+// initialRoomId is set when the page was loaded from a shared /r/<code>
+// link — in that case we already know the room, so just ask for a name.
+export default function JoinScreen({ initialRoomId, onJoin }) {
+  const [name, setName] = useState(getSavedName);
   const [roomId, setRoomId] = useState("");
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!name.trim() || !roomId.trim()) return;
-    onJoin({ name: name.trim(), roomId: roomId.trim() });
+  function join(targetRoomId) {
+    if (!name.trim() || !targetRoomId.trim()) return;
+    onJoin({ name: name.trim(), roomId: targetRoomId.trim() });
+  }
+
+  if (initialRoomId) {
+    return (
+      <div className="join-screen">
+        <h1>CouchCrew</h1>
+        <p>Joining room {initialRoomId}</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            join(initialRoomId);
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+          <button type="submit">Join room</button>
+        </form>
+      </div>
+    );
   }
 
   return (
     <div className="join-screen">
       <h1>CouchCrew</h1>
       <p>Watch together, chat, and talk — from wherever you are.</p>
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          join(roomId);
+        }}
+      >
         <input
           type="text"
           placeholder="Your name"
@@ -23,12 +62,20 @@ export default function JoinScreen({ onJoin }) {
         />
         <input
           type="text"
-          placeholder="Room code (make one up to create a room)"
+          placeholder="Room code (from a link a friend sent you)"
           value={roomId}
           onChange={(e) => setRoomId(e.target.value)}
         />
         <button type="submit">Join room</button>
       </form>
+      <div className="join-divider">or</div>
+      <button
+        type="button"
+        className="secondary"
+        onClick={() => join(generateRoomCode())}
+      >
+        Create a new room
+      </button>
     </div>
   );
 }

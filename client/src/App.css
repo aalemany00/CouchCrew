@@ -48,6 +48,37 @@ button {
   margin: 0 auto;
 }
 
+.room-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.room-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+button.secondary {
+  background: transparent;
+  border: 1px solid #3a3d4d;
+  color: inherit;
+  font-weight: 500;
+}
+
+button.secondary.leave {
+  border-color: #c4495a;
+  color: #e8828e;
+}
+
+.join-divider {
+  margin: 1rem 0;
+  color: #6b6f85;
+  font-size: 0.85rem;
+}
+
 .room-grid {
   display: grid;
   grid-template-columns: 1fr;
