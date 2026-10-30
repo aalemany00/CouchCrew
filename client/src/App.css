@@ -71,6 +71,10 @@ button {
   padding: 1rem;
 }
 
+.reconnecting {
+  color: #f0b232;
+}
+
 .placeholder {
   border: 1px dashed #3a3d4d;
   color: #a7abc0;
