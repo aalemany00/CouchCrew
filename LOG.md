@@ -5,6 +5,26 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Chat history + join/leave messages (Job 1)
+
+**Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
+
+**What we built:**
+- Server keeps the last 50 messages per room so joining mid-conversation no
+  longer drops you into an empty chat panel — history is sent as part of
+  `room:joined` and cleared when the room empties (same lifetime as the room).
+- "X joined the room" / "X left the room" system messages, broadcast and
+  stored in the same history, rendered visually distinct from real chat.
+- Chat auto-scrolls to the latest message; messages are capped at 500 chars
+  client- and server-side.
+
+**Verified:** two real browser tabs — a second tab joining via a shared
+link immediately saw the first tab's message and its own join confirmed to
+the first tab live; closing the second tab showed "left the room" on the
+first tab and presence dropping correctly.
+
+---
+
 ## 2026-10-30 — Room UX: shareable links, leave, persistence (Job 1)
 
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
