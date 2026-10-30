@@ -5,6 +5,30 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Room UX: shareable links, leave, persistence (Job 1)
+
+**Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
+
+**What we built:**
+- Real shareable room links (`/r/<code>`) instead of two people having to
+  agree on and type the same code — "Create a new room" generates one and
+  puts it straight in the URL.
+- A "Copy invite link" and "Leave room" button in the room header.
+- Session persistence: refreshing mid-room rejoins automatically instead of
+  dropping back to the join screen; your name is remembered for next time.
+- Also fixed: a dropped/restarted server now gets silently auto-rejoined
+  via a `connect` listener that re-sends `room:join` (previously only ran
+  once on mount, so a reconnect left you connected but not actually "in"
+  the room until a manual refresh). UI shows "Reconnecting..." while down.
+  Verified by killing and restarting the local backend mid-session.
+
+**Why now:** this is all in Job 1's owned files, doesn't touch anything
+Henry or John are building into (`VideoPanel.jsx`, `WatchPlayer.jsx`), and
+directly serves the real use case — sharing a room with one other person
+shouldn't require reading a code over text.
+
+---
+
 ## 2026-10-30 — Deployed
 
 **Who:** Adrian, with Claude Code.
