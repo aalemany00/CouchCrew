@@ -4,7 +4,7 @@ const ROOM_PATH_RE = /^\/r\/([a-zA-Z0-9-]+)\/?$/;
 
 export function getRoomIdFromPath() {
   const match = window.location.pathname.match(ROOM_PATH_RE);
-  return match ? match[1] : null;
+  return match ? match[1].toLowerCase() : null;
 }
 
 export function setRoomPath(roomId) {
