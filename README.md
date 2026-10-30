@@ -39,8 +39,14 @@ cp .env.example .env
 npm run dev         # http://localhost:5173
 ```
 
+## Live
+
+- Frontend: https://couch-crew.vercel.app
+- Backend: https://couchcrew.onrender.com (free tier — spins down when idle,
+  first request after inactivity can take 30-60s)
+
 ## Status
 
-Scaffold stage — room join, chat, and the realtime backbone work end to end
-locally. Video/screen-share (Daily.co) and synced YouTube playback are not
-yet integrated. Not deployed yet.
+Deployed. Room join, chat, and the realtime backbone work end to end in
+production. Video/screen-share (Daily.co) and synced YouTube playback are
+not yet integrated — see `CLAUDE.md` for the job split.

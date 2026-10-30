@@ -5,6 +5,30 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Deployed
+
+**Who:** Adrian, with Claude Code.
+
+**What we did:**
+- Backend deployed to Render (free tier): https://couchcrew.onrender.com
+- Frontend deployed to Vercel (free/Hobby tier): https://couch-crew.vercel.app
+- Connected them: `VITE_SERVER_URL` on Vercel points at the Render URL,
+  `CLIENT_ORIGIN` on Render points back at the Vercel URL for CORS.
+- Verified live: joined a real room on the deployed site and confirmed
+  presence/chat work against the deployed backend, not just localhost.
+
+**Notes:**
+- Render's free tier required adding a card for verification (a $1 temporary
+  authorization, not a real charge) before it would deploy — expected
+  behavior, not a billing issue.
+- Free Render instances spin down after inactivity; first request after idle
+  can take 30-60s to wake back up. Fine for this artifact, worth knowing so
+  it isn't mistaken for a bug during testing/demo.
+
+**Open items:**
+- Henry and John can now build Jobs 2/3 against the live backend instead of
+  only localhost.
+
 ## 2026-10-29 — Job assignment
 
 **Who:** Adrian, with Claude Code.
