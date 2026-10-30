@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
+import { registerDailyRoutes } from "./daily.js";
 
 const PORT = process.env.PORT || 3001;
 
@@ -19,6 +20,8 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+registerDailyRoutes(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

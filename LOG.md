@@ -5,6 +5,29 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Video/screen share first pass (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/video-av`.
+
+**What we decided:**
+- Daily.co via `@daily-co/daily-react`, one Daily room per CouchCrew room.
+  The server provisions it (`POST /daily/room`, new `server/daily.js`, key in
+  `DAILY_API_KEY` on Render) so the API key never reaches the browser. Chose
+  this over a single shared env-var room so rooms don't all share one call.
+- Calls are opt-in: entering a room doesn't touch devices; "Join call" lets
+  you pick mic/cam on or off. No camera/mic (or denied permission) still
+  joins as a viewer; camera-off shows a name-initial tile.
+- Responsive tile grid + control bar (mute, camera, share screen, leave);
+  screen share spans the full grid width. Share button hidden on browsers
+  that can't screen share (e.g. most phones).
+
+**Touches outside Job 2's files (flag in PR):** `server/index.js` (2 lines to
+register the route), `server/daily.js` (new), `render.yaml` (`DAILY_API_KEY`).
+
+**Not yet verified:** end-to-end with a real Daily key and two browsers.
+
+---
+
 ## 2026-10-30 — Room UX: shareable links, leave, persistence (Job 1)
 
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
