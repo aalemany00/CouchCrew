@@ -31,6 +31,65 @@ in an actual video call.
 
 ---
 
+## 2026-10-30 — Job 3: synced YouTube playback + cross-service research
+
+**Who:** John Nguyen (Job 3), with Claude Code (branch `feature/watch-sync`).
+
+**What we built:** `WatchPlayer.jsx` embeds the YouTube IFrame Player API.
+Anyone in the room can paste a YouTube link and control playback; play,
+pause, seek and load go out over the existing `sync:event` relay, so
+`server/index.js` is unchanged.
+
+**What we decided:**
+- Anyone-controls (no host), because the room is small and trust is high.
+- Late joiners ask the room for state (`request` / `state` events) instead
+  of the server remembering it, so Job 1's file stays untouched. Cost: if
+  nobody in the room has a video loaded, a new joiner sees nothing until
+  someone loads one.
+- YouTube has no seek event, so seeks are detected by polling twice a
+  second and treating a jump over 1.5s as a seek.
+- Drift correction: whoever acted last sends a heartbeat every 5s while
+  playing; anyone more than 2s off jumps to match.
+- Simultaneous actions: events carry the sender's socket id and a conflict
+  within 0.6s is won by the lower id on both sides, so everyone converges.
+
+**Tested in a real browser (two tabs):** late join mid-video, pause, seek,
+and play from the other side all synced. Not tested: the simultaneous-action
+tie-break (needs two real users acting at once) and a real phone.
+
+**Bugs found and fixed while testing:**
+- The hidden player frame was sized to the whole window and made the page
+  wider than the screen. It is now anchored to its panel (`App.css`).
+- A hot reload recreated the player empty, so that tab could no longer
+  answer a new joiner. The player now restores its last known state.
+
+**Research spike: syncing Netflix / Hulu / other DRM services**
+Outcome: no workable approach inside our scope. Findings:
+- DRM'd video can't be embedded or scripted from our page the way YouTube
+  can, so we can't drive someone else's Netflix player from the site.
+- The only thing that works in practice is what the Teleparty extension
+  does: every viewer installs a browser extension, logs into their own
+  subscription, and the extension syncs play/pause/seek between those
+  separate players. It does not carry the video itself.
+- That fails our requirements: it needs every viewer to install an
+  extension (desktop browsers; not a phone browser) and every viewer to
+  hold their own subscription. "Everyone watches their own thing" is
+  already out of scope in `CLAUDE.md`.
+- Caveat on sources: a web search found consumer how-to pages and store
+  listings, not technical documentation. The DRM reasoning above is from
+  general knowledge and was not verified against the Teleparty source or
+  the EME spec.
+- Decision: we are not pursuing it. Screen share (Job 2) stays the answer
+  for "watch anything together"; note that it may show a black picture for
+  DRM'd content in some browsers, which we have not tested.
+
+**Open items:**
+- Real-phone test of the watch player.
+- Integration with Job 2's video panel on one page, and a check that the
+  watch player and Daily.co don't fight over audio.
+
+---
+
 ## 2026-10-30 — Daily.co room endpoint for Job 2
 
 **Who:** Adrian, with Claude Code, on `feature/daily-room-endpoint`.
