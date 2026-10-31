@@ -9,5 +9,3 @@ services:
     envVars:
       - key: CLIENT_ORIGIN
         sync: false
-      - key: DAILY_API_KEY
-        sync: false

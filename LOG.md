@@ -5,6 +5,38 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Switched Job 2 from Daily.co to Jitsi Meet
+
+**Who:** Adrian, with Claude Code, on `feature/jitsi-switch`.
+
+**What happened:** testing Henry's merged Daily.co integration live hit
+`Meeting ended in error: account-missing-payment-method`. Turned out Daily's
+free allowance (10,000 participant-minutes/month) is bundled into their one
+paid plan, not a separate free tier — a credit card is required on the
+account to use it at all, even though signup itself asks for no card. We'd
+rather not have anyone on the team deal with a billing account for a class
+project, so we switched providers instead of adding a card.
+
+**What we built:** `VideoPanel.jsx` now embeds **Jitsi Meet's free public
+server** (`meet.jit.si`) via its IFrame API. Verified (per Daily's own
+pricing page, fetched directly) that this needs no account, API key, or
+payment method — genuinely free, not "free tier of a paid plan." Removed
+`server/daily.js`, the `/daily/room` endpoint, the `@daily-co/*` client
+packages, and `DAILY_API_KEY` from Render/`render.yaml`/docs.
+
+**Trade-off:** Henry's Daily version had a custom per-participant tile grid
+built with React hooks (mute/camera-off indicators, camera-error handling).
+Jitsi's IFrame API embeds Jitsi's own complete call UI instead — still has
+mic/camera/screen-share, just not the same level of custom UI control. That
+work isn't wasted as a learning exercise, but it's not what's live.
+
+**Open items:**
+- Verify end-to-end with a real call (two people, real mic/camera) once
+  this is deployed.
+- Tell Henry about the switch and why.
+
+---
+
 ## 2026-10-30 — Chat history + join/leave messages (Job 1)
 
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.

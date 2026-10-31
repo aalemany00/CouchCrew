@@ -113,29 +113,26 @@ share their screen so the rest of the room can see it — this is also the
 project's answer for "watching something on a service that can't be truly
 synced" (someone screen-shares their Netflix tab, for example).
 
-**One foundation decision already made:** use a managed WebRTC service
-(**Daily.co** is the suggestion — generous free tier, handles the hard
-networking problems) rather than building raw peer-to-peer WebRTC from
-scratch, so the team's time goes into the actual product instead of
-signaling/NAT-traversal plumbing. If you look into it and have a good reason
-to prefer something else, that's a real option — just log the decision.
+**Foundation decision (settled, don't re-litigate):** we started with
+Daily.co (a managed WebRTC service) but switched to **Jitsi Meet's free
+public server** (`meet.jit.si`) after discovering Daily requires a credit
+card on the account even to use its free allowance. Jitsi's public server
+needs no account, API key, or payment method — ever, for anyone on the
+team, locally or in production.
 
-**Already built and live, don't rebuild it:** a `POST /daily/room` endpoint
-on the server maps a CouchCrew `roomId` to a real Daily.co video room,
-creating one on first use. The Daily API key lives server-side only
-(Adrian manages it in Render's environment variables) — never call Daily's
-API directly from the client. Call it like this:
+**Already built, don't rebuild it:** load `https://meet.jit.si/external_api.js`,
+then:
 ```js
-const res = await fetch(`${SERVER_URL}/daily/room`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ roomId }),
+const api = new JitsiMeetExternalAPI("meet.jit.si", {
+  roomName: `couchcrew-${roomId}`,
+  parentNode: containerRef.current,
+  width: "100%",
+  height: "100%",
+  userInfo: { displayName: name },
 });
-const { url } = await res.json(); // pass this into Daily's embed/hooks
 ```
-This is live on the deployed backend right now (verified working) — you
-don't need your own Daily API key to build against it, and you don't need
-to touch `server/index.js`.
+No server endpoint is involved — the client talks to Jitsi directly, and
+`server/index.js` has no video-related routes at all.
 
 **Yours to decide:** what the video grid looks like, how controls are laid
 out, how it behaves on a phone screen, how you handle someone with no

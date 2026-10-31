@@ -7,9 +7,8 @@ Built for TCSS 490 Artifact 4 ("For Someone Else").
 ## What it does (target scope)
 
 - Join a room by code or link — any number of people
-- Text chat
-- Mic/camera for anyone who opts in
-- Screen share (also the fallback for watching non-YouTube sources together)
+- Text chat, with history for anyone who joins mid-conversation
+- Mic/camera for anyone who opts in, screen share for everyone else to see
 - Synced YouTube playback — play/pause/seek broadcasts to the whole room
 - Works on a phone browser, no app install needed
 
@@ -39,10 +38,9 @@ cp .env.example .env
 npm run dev         # http://localhost:5173
 ```
 
-To test video/screen-share locally, the server also needs a `DAILY_API_KEY`
-env var (a free Daily.co account's API key) — set it in `server/.env` or
-export it before `npm run dev`. Without it, `/daily/room` returns a clear
-500 error instead of silently failing.
+Video/screen-share runs on Jitsi Meet's free public server
+(`meet.jit.si`) — no account, API key, or payment method needed, locally
+or in production.
 
 ## Live
 
@@ -52,6 +50,6 @@ export it before `npm run dev`. Without it, `/daily/room` returns a clear
 
 ## Status
 
-Deployed. Room join, chat, and the realtime backbone work end to end in
-production. Video/screen-share (Daily.co) and synced YouTube playback are
-not yet integrated — see `CLAUDE.md` for the job split.
+Deployed and all three features work together in production: rooms/chat
+with history, video/screen-share via Jitsi, and synced YouTube playback.
+See `CLAUDE.md` for the job split and `LOG.md` for what's been built.
