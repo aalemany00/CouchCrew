@@ -7,7 +7,7 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ## 2026-10-30 — Job 3: synced YouTube playback + cross-service research
 
-**Who:** Job 3 owner, with Claude Code (branch `feature/watch-sync`).
+**Who:** John Nguyen (Job 3), with Claude Code (branch `feature/watch-sync`).
 
 **What we built:** `WatchPlayer.jsx` embeds the YouTube IFrame Player API.
 Anyone in the room can paste a YouTube link and control playback; play,
