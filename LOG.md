@@ -5,6 +5,43 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Room leader: one person controls what's playing
+
+**Who:** Adrian, with Claude Code, on `feature/room-leader`.
+
+**What we decided:** rather than anyone in the room being able to load a
+video or hit play/pause (which can fight for control with multiple people),
+the room now has one leader — whoever created it — who alone controls video
+selection and playback. The leader can hand control to someone else; if
+they disconnect, it passes to another member automatically so the room is
+never stuck with no one able to do anything.
+
+**What we built:**
+- `server/index.js`: a `roomId -> leaderId` map. First joiner into an empty
+  room becomes its leader. New `leader:transfer` event, accepted only from
+  the current leader, targeting someone actually in the room. Leadership
+  reassigns automatically on the leader's disconnect.
+- `RoomView.jsx`: shows 👑 next to the leader's name, a "Make leader" button
+  next to everyone else (visible only to the leader), passes `isLeader` down
+  to `WatchPlayer`.
+- `WatchPlayer.jsx` (Job 3's file — flagging for John's review): non-leaders
+  get a locked iframe (`pointer-events: none`) and the load form replaced
+  with a status message; only the leader's play/pause/seek/load actions
+  broadcast to the room.
+
+**Verified with two real browser tabs:** room creator showed as leader with
+the load controls; second tab correctly saw itself as a non-leader with
+locked controls and the right message. Clicking "Make leader" on the first
+tab correctly flipped both tabs' UI in real time — the old leader lost
+controls, the new one gained them, bidirectionally and instantly.
+
+**Known limitation:** leadership is tied to a socket id, so a leader who
+disconnects and reconnects doesn't automatically get leadership back (they
+get a new socket id) — someone else becomes leader instead. Acceptable for
+this artifact's scope.
+
+---
+
 ## 2026-10-30 — "Find on YouTube" popup instead of a search API
 
 **Who:** Adrian, with Claude Code, on `feature/youtube-finder`.

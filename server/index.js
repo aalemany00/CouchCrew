@@ -34,11 +34,19 @@ const rooms = new Map();
 // conversation isn't dropped into an empty chat panel. Cleared once the
 // room empties out, same lifetime as the room itself.
 const roomMessages = new Map();
+// roomId -> socketId of the current leader. The first person to join an
+// empty room becomes its leader; only the leader controls what's playing.
+// Lifetime matches the room's — cleared when it empties, same as above.
+const roomLeaders = new Map();
 
 function getRoomMembers(roomId) {
   const members = rooms.get(roomId);
   if (!members) return [];
   return Array.from(members.entries()).map(([id, info]) => ({ id, ...info }));
+}
+
+function roomState(roomId) {
+  return { members: getRoomMembers(roomId), leaderId: roomLeaders.get(roomId) || null };
 }
 
 function addMessage(roomId, message) {
@@ -60,12 +68,15 @@ io.on("connection", (socket) => {
     if (!rooms.has(roomId)) rooms.set(roomId, new Map());
     rooms.get(roomId).set(socket.id, { name: displayName });
 
+    // First person into an empty room leads it.
+    if (!roomLeaders.has(roomId)) roomLeaders.set(roomId, socket.id);
+
     socket.emit("room:joined", {
       roomId,
-      members: getRoomMembers(roomId),
       messages: roomMessages.get(roomId) || [],
+      ...roomState(roomId),
     });
-    socket.to(roomId).emit("room:presence", { members: getRoomMembers(roomId) });
+    socket.to(roomId).emit("room:presence", roomState(roomId));
 
     const systemMessage = addMessage(roomId, {
       id: `system-${socket.id}-${Date.now()}`,
@@ -96,6 +107,15 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("sync:event", event);
   });
 
+  // Only the current leader can hand leadership to someone else in the room.
+  socket.on("leader:transfer", ({ roomId, toSocketId }) => {
+    if (!roomId || !toSocketId) return;
+    if (roomLeaders.get(roomId) !== socket.id) return;
+    if (!rooms.get(roomId)?.has(toSocketId)) return;
+    roomLeaders.set(roomId, toSocketId);
+    io.to(roomId).emit("room:presence", roomState(roomId));
+  });
+
   socket.on("disconnect", () => {
     if (!joinedRoomId) return;
     const members = rooms.get(joinedRoomId);
@@ -106,11 +126,17 @@ io.on("connection", (socket) => {
       if (members.size === 0) {
         rooms.delete(joinedRoomId);
         roomMessages.delete(joinedRoomId);
+        roomLeaders.delete(joinedRoomId);
         return;
+      }
+      // Leadership follows along if the leader leaves, so the room never
+      // gets stuck with no one able to control what's playing.
+      if (roomLeaders.get(joinedRoomId) === socket.id) {
+        roomLeaders.set(joinedRoomId, members.keys().next().value);
       }
     }
 
-    socket.to(joinedRoomId).emit("room:presence", { members: getRoomMembers(joinedRoomId) });
+    socket.to(joinedRoomId).emit("room:presence", roomState(joinedRoomId));
     const systemMessage = addMessage(joinedRoomId, {
       id: `system-${socket.id}-${Date.now()}`,
       system: true,
