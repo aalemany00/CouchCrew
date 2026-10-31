@@ -92,3 +92,54 @@ button {
 .chat-panel input {
   flex: 1;
 }
+
+.watch-load {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.watch-load input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #3a3d4d;
+  background: #12141c;
+  color: inherit;
+}
+
+.watch-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.watch-frame[hidden] {
+  display: block;
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.watch-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.watch-error {
+  color: #ff7a7a;
+}
+
+.watch-player {
+  position: relative;
+  min-width: 0;
+}
+
+.watch-frame {
+  max-width: 100%;
+}
