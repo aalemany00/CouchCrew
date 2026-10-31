@@ -278,18 +278,33 @@ export default function WatchPlayer({ roomId }) {
     send({ type: "load", ...state });
   }
 
+  // YouTube's own site can't be embedded in the room (they block framing for
+  // browsing), so this opens a small popup alongside the room instead of a
+  // full tab-switch — search there, copy the link, paste it in below.
+  function openYouTubeFinder() {
+    const typed = url.trim();
+    const target =
+      typed && !parseVideoId(typed)
+        ? `https://www.youtube.com/results?search_query=${encodeURIComponent(typed)}`
+        : "https://www.youtube.com";
+    window.open(target, "couchcrew-youtube-finder", "width=480,height=760,noopener,noreferrer");
+  }
+
   return (
     <div className="watch-player">
       <h2>Watch Together</h2>
       <form className="watch-load" onSubmit={handleLoad}>
         <input
           type="text"
-          placeholder="Paste a YouTube link..."
+          placeholder="Paste a YouTube link, or type a search and find it →"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
         <button type="submit">Load</button>
       </form>
+      <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
+        Find on YouTube ↗
+      </button>
       {error && <p className="watch-error">{error}</p>}
       <div className="watch-frame" hidden={!hasVideo} ref={containerRef} />
       {!hasVideo && <p className="room-tag">Nothing playing yet. Room: {roomId}</p>}

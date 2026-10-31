@@ -5,6 +5,31 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — "Find on YouTube" popup instead of a search API
+
+**Who:** Adrian, with Claude Code, on `feature/youtube-finder`.
+
+**What we decided:** we wanted to browse/search YouTube without leaving the
+room, but confirmed two real constraints first: YouTube's own site blocks
+being embedded for browsing (only single-video players are embeddable), and
+an in-app search box would need the YouTube Data API, which requires a
+Google Cloud billing account (card) just to enable the API at all — same
+situation as Daily.co. We did confirm the API's free quota is a hard cap
+(requests fail past it, not billed further), but decided against adding yet
+another third-party billing account for this project.
+
+**What we built instead:** a "Find on YouTube ↗" button next to the link
+input in `WatchPlayer.jsx`. It opens a small popup window to YouTube —
+pre-filled with a search if you typed one, or the homepage if you didn't —
+so you search right there, copy the link, and paste it back in without a
+full tab-switch. No account, no API key, no card, works today.
+
+**Verified:** triggers the popup correctly with the right search URL (the
+automated test browser's popup blocker stopped it, as expected for a
+non-human click — real clicks aren't affected).
+
+---
+
 ## 2026-10-30 — Switched Job 2 from Daily.co to Jitsi Meet
 
 **Who:** Adrian, with Claude Code, on `feature/jitsi-switch`.
