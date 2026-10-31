@@ -1,7 +1,9 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
+import { registerDailyRoutes } from "./daily.js";
 
 const PORT = process.env.PORT || 3001;
 const MAX_HISTORY = 50;
@@ -21,6 +23,11 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+// Maps a CouchCrew roomId to a Daily.co video room, creating one on first
+// use. Implementation lives in daily.js (Job 2) — the API key stays
+// server-side only, the client only ever receives the resulting room URL.
+registerDailyRoutes(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

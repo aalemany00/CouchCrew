@@ -71,6 +71,22 @@ open a PR into `main`; at least one other teammate reviews before merging.
   and a screen-share control. Must be usable on a phone browser.
 - This component is also the answer for "watch Netflix/Hulu/etc together" —
   one person screen-shares their tab.
+- **Getting a Daily video room for a CouchCrew room:** don't call Daily's
+  API from the client (that would expose the API key). Instead:
+  ```js
+  const res = await fetch(`${SERVER_URL}/daily/room`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId }),
+  });
+  const { url } = await res.json(); // pass this to Daily's embed/hooks
+  ```
+  This hits a server endpoint (Job 1 owns it, already built) that creates or
+  reuses a Daily room for that `roomId` and returns its join URL. You need
+  your own free Daily.co account and API key for this to work — see
+  `ONBOARDING.md` / ask Adrian for how the key gets configured, since it's
+  a server secret, not something that goes in client code or `.env` on
+  your machine for the deployed version.
 - Branch: `feature/video-av`
 
 ### Job 3 — Synced Watch Party Playback (John)
