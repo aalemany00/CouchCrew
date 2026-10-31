@@ -5,6 +5,32 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-30 — Merge resolution: Henry's Daily implementation wins
+
+**Who:** Adrian, with Claude Code, resolving `feature/video-av` into `main`.
+
+Henry's branch (below) independently built the same `/daily/room` endpoint
+this log's previous entry describes, since his branch started before that
+work was merged. His version (`server/daily.js`) is more robust — it
+handles two people racing to create a room at once, sanitizes room names
+more defensively, and sets useful Daily properties (screenshare enabled,
+prejoin UI off) — so it replaces the inline version in `server/index.js`
+rather than the other way around. No functional loss, same API contract
+(`POST /daily/room { roomId } -> { url }`), both client implementations
+already called it the same way.
+
+**Verified before merging:** both `feature/video-av` and `feature/watch-sync`
+build cleanly in isolated worktrees. `feature/watch-sync` was further
+verified live — two browser tabs joined the same room, one loaded a real
+YouTube video, and the second tab received the synced state and played the
+same video within seconds (the join-time `request`/`state` handshake works
+as designed). `feature/video-av`'s Daily integration was verified by code
+review plus confirming the live `/daily/room` endpoint actually creates
+real Daily rooms (see entry below) — not yet tested with two real browsers
+in an actual video call.
+
+---
+
 ## 2026-10-30 — Daily.co room endpoint for Job 2
 
 **Who:** Adrian, with Claude Code, on `feature/daily-room-endpoint`.
@@ -32,6 +58,28 @@ Henry's real API key to actually create rooms.
 - Henry needs his own free Daily.co account/API key. The key is a server
   secret — give it to Adrian directly (not in the group chat) to set as
   `DAILY_API_KEY` on Render, rather than Henry having Render access himself.
+---
+
+## 2026-10-30 — Video/screen share first pass (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/video-av`.
+
+**What we decided:**
+- Daily.co via `@daily-co/daily-react`, one Daily room per CouchCrew room.
+  The server provisions it (`POST /daily/room`, new `server/daily.js`, key in
+  `DAILY_API_KEY` on Render) so the API key never reaches the browser. Chose
+  this over a single shared env-var room so rooms don't all share one call.
+- Calls are opt-in: entering a room doesn't touch devices; "Join call" lets
+  you pick mic/cam on or off. No camera/mic (or denied permission) still
+  joins as a viewer; camera-off shows a name-initial tile.
+- Responsive tile grid + control bar (mute, camera, share screen, leave);
+  screen share spans the full grid width. Share button hidden on browsers
+  that can't screen share (e.g. most phones).
+
+**Touches outside Job 2's files (flag in PR):** `server/index.js` (2 lines to
+register the route), `server/daily.js` (new), `render.yaml` (`DAILY_API_KEY`).
+
+**Not yet verified:** end-to-end with a real Daily key and two browsers.
 
 ---
 
