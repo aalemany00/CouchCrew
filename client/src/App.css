@@ -106,6 +106,35 @@ button.secondary.leave {
   color: #f0b232;
 }
 
+.member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.member-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.member-list li.leader {
+  color: #f0c419;
+}
+
+.make-leader {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  min-height: 0;
+  background: transparent;
+  border: 1px solid #3a3d4d;
+  color: #a7abc0;
+}
+
 .placeholder {
   border: 1px dashed #3a3d4d;
   color: #a7abc0;
@@ -201,6 +230,10 @@ button.secondary.leave {
 
 .watch-error {
   color: #ff7a7a;
+}
+
+.watch-frame.locked iframe {
+  pointer-events: none;
 }
 
 .watch-player {

@@ -86,7 +86,25 @@ open a PR into `main`; at least one other teammate reviews before merging.
 - First ~3 days: time-boxed research spike into true cross-service sync
   (Netflix/Hulu/other). Document findings in `LOG.md` regardless of outcome —
   if nothing viable turns up, that's a real, loggable result, not a failure.
+- **Room leader gating (added by Adrian, see LOG.md):** `WatchPlayer` now
+  takes an `isLeader` prop from `RoomView.jsx` (Job 1). Only the leader's
+  actions call `send()` / submit the load form — everyone else's iframe is
+  CSS-locked (`pointer-events: none` via `.watch-frame.locked`) and their
+  load UI is replaced with a status message. If you touch this component,
+  keep that gating intact rather than reverting to anyone-controls.
 - Branch: `feature/watch-sync`
+
+### Cross-cutting: room leadership (owned by Adrian, touches Job 3's file)
+- The server (`server/index.js`) tracks one `leaderId` per room — the first
+  person to join an empty room becomes its leader. The leader can hand it to
+  anyone else in the room (`leader:transfer` socket event); if the leader
+  disconnects, it passes to another member automatically so the room is
+  never stuck. `RoomView.jsx` shows a 👑 next to the leader's name and a
+  "Make leader" button next to everyone else, visible only to the leader.
+- Known limitation: leadership is tied to a socket id, so a leader's own
+  reconnect doesn't restore it to them (they get a new socket id) — someone
+  else becomes leader automatically instead. Acceptable for this artifact's
+  scope; not fixed.
 
 ### Integration (shared, not a 4th job)
 Combining chat + video tiles + watch player into one working room page is

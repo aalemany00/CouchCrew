@@ -1,8 +1,10 @@
 // Job 3 (Synced Watch Party Playback) owns this component.
 //
-// Anyone in the room can load a YouTube video and control playback. Local
-// actions are broadcast through the server's generic "sync:event" relay as
-// { type, ... } objects:
+// Only the room leader (isLeader prop, from RoomView/server) can load a
+// video or control playback — everyone else's iframe is locked
+// (pointer-events: none, see .watch-frame.locked) and their load form is
+// hidden. The leader's actions broadcast through the server's generic
+// "sync:event" relay as { type, ... } objects:
 //   load   { videoId, time, playing }  - everyone switches to this video
 //   play   { time }
 //   pause  { time }
@@ -60,7 +62,7 @@ function parseVideoId(input) {
   return null;
 }
 
-export default function WatchPlayer({ roomId }) {
+export default function WatchPlayer({ roomId, isLeader }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [hasVideo, setHasVideo] = useState(false);
@@ -76,6 +78,13 @@ export default function WatchPlayer({ roomId }) {
   const lastLocalActionRef = useRef(0); // when the local user last sent play/pause/seek
   const waitingForStateRef = useRef(false);
   const lastKnownRef = useRef(null); // last state seen, used to restore a recreated player
+  // Only the room leader controls playback — a ref so the stable callbacks
+  // below don't need to be recreated (and the player rebuilt) every time
+  // leadership changes.
+  const isLeaderRef = useRef(isLeader);
+  useEffect(() => {
+    isLeaderRef.current = isLeader;
+  }, [isLeader]);
 
   // Events are stamped with our socket id so simultaneous actions from two
   // people resolve the same way on both sides.
@@ -140,6 +149,7 @@ export default function WatchPlayer({ roomId }) {
             if (state) applyState(state);
           },
           onStateChange: (e) => {
+            if (!isLeaderRef.current) return;
             if (Date.now() < suppressUntilRef.current) return;
             const time = playerRef.current.getCurrentTime();
             if (e.data === YT_PLAYING) {
@@ -243,6 +253,7 @@ export default function WatchPlayer({ roomId }) {
       const expected = lastTime + (playing ? (now - at) / 1000 : 0);
       lastTimeRef.current = { time, at: now };
       lastKnownRef.current = { videoId: videoIdRef.current, time, playing };
+      if (!isLeaderRef.current) return;
       if (now < suppressUntilRef.current) return;
       if (Math.abs(time - expected) > SEEK_THRESHOLD) {
         controllerRef.current = true;
@@ -265,6 +276,7 @@ export default function WatchPlayer({ roomId }) {
 
   function handleLoad(e) {
     e.preventDefault();
+    if (!isLeader) return;
     const videoId = parseVideoId(url);
     if (!videoId) {
       setError("That doesn't look like a YouTube link.");
@@ -293,20 +305,30 @@ export default function WatchPlayer({ roomId }) {
   return (
     <div className="watch-player">
       <h2>Watch Together</h2>
-      <form className="watch-load" onSubmit={handleLoad}>
-        <input
-          type="text"
-          placeholder="Paste a YouTube link, or type a search and find it →"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-        <button type="submit">Load</button>
-      </form>
-      <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
-        Find on YouTube ↗
-      </button>
+      {isLeader ? (
+        <>
+          <form className="watch-load" onSubmit={handleLoad}>
+            <input
+              type="text"
+              placeholder="Paste a YouTube link, or type a search and find it →"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            <button type="submit">Load</button>
+          </form>
+          <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
+            Find on YouTube ↗
+          </button>
+        </>
+      ) : (
+        <p className="room-tag">Only the room leader can choose what to play.</p>
+      )}
       {error && <p className="watch-error">{error}</p>}
-      <div className="watch-frame" hidden={!hasVideo} ref={containerRef} />
+      <div
+        className={`watch-frame${isLeader ? "" : " locked"}`}
+        hidden={!hasVideo}
+        ref={containerRef}
+      />
       {!hasVideo && <p className="room-tag">Nothing playing yet. Room: {roomId}</p>}
     </div>
   );

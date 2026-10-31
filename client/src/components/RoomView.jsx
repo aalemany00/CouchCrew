@@ -6,8 +6,11 @@ import WatchPlayer from "./WatchPlayer";
 
 export default function RoomView({ roomId, name, onLeave }) {
   const [members, setMembers] = useState([]);
+  const [leaderId, setLeaderId] = useState(null);
   const [connected, setConnected] = useState(socket.connected);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  const amLeader = connected && leaderId === socket.id;
 
   async function copyInviteLink() {
     const url = `${window.location.origin}/r/${roomId}`;
@@ -18,6 +21,10 @@ export default function RoomView({ roomId, name, onLeave }) {
     } catch {
       window.prompt("Copy this link to invite someone:", url);
     }
+  }
+
+  function transferLeader(toSocketId) {
+    socket.emit("leader:transfer", { roomId, toSocketId });
   }
 
   useEffect(() => {
@@ -32,11 +39,13 @@ export default function RoomView({ roomId, name, onLeave }) {
     function handleDisconnect() {
       setConnected(false);
     }
-    function handleJoined({ members }) {
+    function handleJoined({ members, leaderId }) {
       setMembers(members);
+      setLeaderId(leaderId);
     }
-    function handlePresence({ members }) {
+    function handlePresence({ members, leaderId }) {
       setMembers(members);
+      setLeaderId(leaderId);
     }
 
     socket.on("connect", handleConnect);
@@ -70,13 +79,31 @@ export default function RoomView({ roomId, name, onLeave }) {
           </div>
         </div>
         {connected ? (
-          <p>{members.length} watching: {members.map((m) => m.name).join(", ")}</p>
+          <ul className="member-list">
+            {members.map((m) => {
+              const isLeader = m.id === leaderId;
+              return (
+                <li key={m.id} className={isLeader ? "leader" : undefined}>
+                  {isLeader && <span title="Room leader">👑</span>} {m.name}
+                  {amLeader && !isLeader && (
+                    <button
+                      type="button"
+                      className="make-leader"
+                      onClick={() => transferLeader(m.id)}
+                    >
+                      Make leader
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <p className="reconnecting">Reconnecting...</p>
         )}
       </header>
       <div className="room-grid">
-        <WatchPlayer roomId={roomId} />
+        <WatchPlayer roomId={roomId} isLeader={amLeader} />
         <VideoPanel roomId={roomId} />
         <ChatPanel roomId={roomId} />
       </div>
