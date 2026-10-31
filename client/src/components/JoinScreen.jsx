@@ -16,8 +16,11 @@ export default function JoinScreen({ initialRoomId, onJoin }) {
   const [roomId, setRoomId] = useState("");
 
   function join(targetRoomId) {
-    if (!name.trim() || !targetRoomId.trim()) return;
-    onJoin({ name: name.trim(), roomId: targetRoomId.trim() });
+    // Normalize so "ABC123" and "abc123" are the same room — people will
+    // read codes aloud or retype them from memory.
+    const normalizedRoomId = targetRoomId.trim().toLowerCase();
+    if (!name.trim() || !normalizedRoomId) return;
+    onJoin({ name: name.trim(), roomId: normalizedRoomId });
   }
 
   if (initialRoomId) {
