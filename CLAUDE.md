@@ -26,7 +26,7 @@ Real target user: Adrian and his long-distance partner, generalized to
 **In scope (must work by Nov 8):**
 - Create/join a room by code or link
 - Text chat in the room
-- Mic/camera for anyone who wants it, via Daily.co
+- Mic/camera for anyone who wants it, via Jitsi Meet
 - Screen share
 - Synced YouTube playback (play/pause/seek broadcast to everyone in the room)
 - Mobile-responsive (phone browser, not a native app)
@@ -47,10 +47,10 @@ possible future work, not required here.
   persist (Render/Railway, not Vercel serverless). Owns: room membership,
   chat relay, and a generic `sync:event` relay that the watch player uses to
   broadcast play/pause/seek.
-- Mic/camera/screen share do **not** go through our Socket.IO server — Daily.co
-  is a managed WebRTC service the client talks to directly. Our server only
-  needs to hand out/confirm room membership; Daily.co handles the actual
-  media connections.
+- Mic/camera/screen share do **not** go through our Socket.IO server or any
+  server of ours at all — the client embeds Jitsi Meet's free public server
+  (`meet.jit.si`) directly via its IFrame API. No account, API key, or
+  payment method needed, ever.
 
 ## The three jobs
 
@@ -66,27 +66,17 @@ open a PR into `main`; at least one other teammate reviews before merging.
 - Branch: `feature/rooms-chat`
 
 ### Job 2 — Audio/Video/Screen Share (Henry)
-- Owns: `client/src/components/VideoPanel.jsx`. Integrate Daily.co
-  (`@daily-co/daily-react` + `@daily-co/daily-js`) for a mic/camera tile grid
-  and a screen-share control. Must be usable on a phone browser.
+- Owns: `client/src/components/VideoPanel.jsx`. Embeds Jitsi Meet's free
+  public server (`meet.jit.si`) via its IFrame API — no account, API key,
+  or payment method needed, locally or in production. Was previously
+  Daily.co; switched because Daily required a credit card on the account
+  even for its free-allowance tier (see `LOG.md`).
 - This component is also the answer for "watch Netflix/Hulu/etc together" —
   one person screen-shares their tab.
-- **Getting a Daily video room for a CouchCrew room:** don't call Daily's
-  API from the client (that would expose the API key). Instead:
-  ```js
-  const res = await fetch(`${SERVER_URL}/daily/room`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomId }),
-  });
-  const { url } = await res.json(); // pass this to Daily's embed/hooks
-  ```
-  This hits a server endpoint (Job 1 owns it, already built) that creates or
-  reuses a Daily room for that `roomId` and returns its join URL. You need
-  your own free Daily.co account and API key for this to work — see
-  `ONBOARDING.md` / ask Adrian for how the key gets configured, since it's
-  a server secret, not something that goes in client code or `.env` on
-  your machine for the deployed version.
+- Load `https://meet.jit.si/external_api.js`, then
+  `new JitsiMeetExternalAPI("meet.jit.si", { roomName: \`couchcrew-${roomId}\`, parentNode, ... })`.
+  No server involvement needed — the CouchCrew backend has no Jitsi-related
+  routes.
 - Branch: `feature/video-av`
 
 ### Job 3 — Synced Watch Party Playback (John)
