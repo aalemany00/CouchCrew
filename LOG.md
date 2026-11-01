@@ -203,6 +203,24 @@ non-human click — real clicks aren't affected).
 
 ---
 
+## 2026-11-01 — Job 2 follow-up after the Jitsi switch (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/video-av`.
+
+**What happened:** my Daily.co version (custom tile grid, `/daily/room`
+endpoint) merged, then was replaced by Adrian's Jitsi embed after Daily's
+free tier turned out to need a card on file. Re-synced `feature/video-av`
+with `main`; nothing of the Daily code remains, which is the intended state.
+
+**What changed:** on phones (<=640px) the Jitsi frame is now ~70vh tall
+instead of 16:9, which is only ~210px on a 375px-wide screen.
+
+**Not yet verified:** a real two-person call, and screen share / mic /
+camera on an actual phone browser. Note: mobile browsers generally can't
+screen share at all, so on phones the Jitsi share option may be absent.
+
+---
+
 ## 2026-10-30 — Switched Job 2 from Daily.co to Jitsi Meet
 
 **Who:** Adrian, with Claude Code, on `feature/jitsi-switch`.

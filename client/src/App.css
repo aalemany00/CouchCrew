@@ -519,6 +519,15 @@ button.secondary.leave {
   background: #0d0f16;
 }
 
+/* 16:9 is only ~210px tall on a phone — too short for Jitsi's controls. */
+@media (max-width: 640px) {
+  .jitsi-container {
+    aspect-ratio: auto;
+    height: 70vh;
+    min-height: 360px;
+  }
+}
+
 .video-error {
   color: #e8828e;
 }
