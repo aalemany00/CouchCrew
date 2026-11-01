@@ -41,7 +41,16 @@ const roomLeaders = new Map();
 // roomId -> genre theme string. Leader-controlled, like the sync-event
 // controls; "classic" (the base drive-in look) until the leader changes it.
 const roomThemes = new Map();
-const VALID_THEMES = new Set(["classic", "horror", "romance", "thriller", "comedy"]);
+const VALID_THEMES = new Set([
+  "classic",
+  "horror",
+  "romance",
+  "thriller",
+  "comedy",
+  "scifi",
+  "fantasy",
+  "action",
+]);
 
 function getRoomMembers(roomId) {
   const members = rooms.get(roomId);

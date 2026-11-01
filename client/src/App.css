@@ -46,6 +46,30 @@
   --text: #fdf6e3;
 }
 
+[data-theme="scifi"] {
+  --accent: #7cf9ff;
+  --accent-soft: #221a4a;
+  --panel-bg: #130c22;
+  --panel-border: #3a2d6a;
+  --text: #e8e6ff;
+}
+
+[data-theme="fantasy"] {
+  --accent: #d4af37;
+  --accent-soft: #10331f;
+  --panel-bg: #0d1f15;
+  --panel-border: #1f4a2d;
+  --text: #ecf7ee;
+}
+
+[data-theme="action"] {
+  --accent: #ff6a1f;
+  --accent-soft: #3a1205;
+  --panel-bg: #200d05;
+  --panel-border: #4a2410;
+  --text: #ffe9d8;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -339,6 +363,53 @@ button.secondary.leave {
   100% { transform: translateY(60vh); opacity: 0; }
 }
 
+.flourish-warp {
+  background: radial-gradient(circle, transparent 20%, #7cf9ff 21%, transparent 23%);
+  animation: flourish-warp 0.6s ease-out 2;
+}
+
+@keyframes flourish-warp {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.flourish-sparkle::before {
+  content: "✨ ⭐ ✨ ⭐ ✨ ⭐ ✨";
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 2rem;
+  animation: flourish-sparkle 2s ease-out forwards;
+}
+
+@keyframes flourish-sparkle {
+  0% { transform: scale(0.5) rotate(0deg); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: scale(1.4) rotate(15deg); opacity: 0; }
+}
+
+.flourish-blast {
+  animation: flourish-blast 0.5s ease-out;
+}
+
+.flourish-blast::before {
+  content: "💥 💥 💥";
+  position: absolute;
+  top: 45%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 2.5rem;
+  animation: flourish-sparkle 1.5s ease-out forwards;
+}
+
+@keyframes flourish-blast {
+  0% { background: #ff6a1f; opacity: 0.6; }
+  100% { background: #ff6a1f; opacity: 0; }
+}
+
 .join-divider {
   margin: 1rem 0;
   color: var(--text-dim);
@@ -511,4 +582,269 @@ button.secondary.leave {
 .watch-player {
   position: relative;
   min-width: 0;
+}
+
+/* ===== Nav bar (Home/Rooms/Themes/Settings) ===== */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.nav-logo {
+  background: none;
+  padding: 0;
+  font-family: "Pacifico", cursive;
+  font-size: 1.4rem;
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--accent-soft);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.nav-link.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+}
+
+/* ===== Home page hero (drive-in marquee screen) ===== */
+.home-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.theater-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 4rem;
+}
+
+.curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  background: repeating-linear-gradient(
+    90deg,
+    #6b0f1a 0 10px,
+    #8a1624 10px 20px
+  );
+  border-radius: 0 0 40px 40px;
+  box-shadow: inset -6px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.curtain-left {
+  left: 0;
+}
+
+.curtain-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.hero-decor {
+  position: absolute;
+  left: 0.5rem;
+  bottom: -0.5rem;
+  font-size: 3rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  z-index: 1;
+}
+
+.film-reel {
+  font-size: 2rem;
+  transform: rotate(-15deg);
+}
+
+.hero-screen {
+  position: relative;
+  flex: 1;
+  max-width: 700px;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border-radius: 12px;
+  border: 4px solid var(--accent-soft);
+  background: radial-gradient(ellipse at 50% 0%, rgba(242, 183, 5, 0.12), transparent 70%), #10141f;
+  box-shadow:
+    0 0 0 8px #0b0d17,
+    0 0 0 9px var(--accent),
+    0 0 40px var(--accent-soft);
+}
+
+.hero-screen::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 20px;
+  background-image: radial-gradient(circle, var(--accent) 2.5px, transparent 3px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero-logo {
+  font-family: "Pacifico", cursive;
+  font-size: 3rem;
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent), 0 0 24px var(--accent);
+  margin: 0;
+}
+
+.hero-tagline {
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin: 0.5rem 0 1.5rem;
+  font-size: 0.85rem;
+}
+
+.ticket-button {
+  background: var(--accent);
+  color: #1a1408;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.8rem 2rem;
+  border-radius: 999px;
+  border: 2px dashed rgba(0, 0, 0, 0.3);
+}
+
+.ticket-button.small {
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+/* ===== Theme poster cards (Home picker + Themes gallery) ===== */
+.theme-gallery {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.poster-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.75rem;
+  background: var(--panel-bg);
+  border: 2px solid var(--panel-border);
+  border-radius: 10px;
+  color: var(--text);
+  text-align: center;
+}
+
+.poster-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-soft);
+}
+
+.poster-icon {
+  font-size: 2rem;
+}
+
+.poster-label {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.poster-tagline {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ===== Simple content pages (Rooms/Themes/Settings) ===== */
+.page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.join-code-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.join-code-form input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #1c1f2b;
+  color: inherit;
+}
+
+.recent-rooms {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.settings-page form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 320px;
+  margin-bottom: 1.5rem;
+}
+
+.settings-page label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.settings-page input {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #1c1f2b;
+  color: inherit;
+}
+
+@media (max-width: 700px) {
+  .theater-hero {
+    padding: 1rem 1.5rem;
+  }
+  .curtain {
+    width: 30px;
+  }
+  .hero-decor {
+    display: none;
+  }
+  .hero-logo {
+    font-size: 2.2rem;
+  }
 }
