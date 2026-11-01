@@ -5,6 +5,53 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-31 — Home/Rooms/Themes/Settings pages, 3 more genres
+
+**Who:** Adrian, with Claude Code, on `feature/home-and-themes`.
+
+**What happened:** Adrian had ChatGPT generate visual inspiration for the
+drive-in theater direction (a mockup with a full app shell: nav bar, a
+marquee hero screen with curtains/popcorn/film-reel decor, ticket-style
+buttons, poster-card theme selectors, and 3 extra genres beyond our
+existing 5). Decided to build it close to that mockup rather than just
+reskin the single room screen.
+
+**What we built:**
+- Real path-based navigation (no router library — `lib/router.js`) across
+  four new pages: Home (hero + theme picker), Rooms (join by code + recent
+  rooms from localStorage), Themes (full gallery, pick-and-go into a new
+  room), Settings (display name). `NavBar` shows on all of them; the room
+  itself keeps using its own themed header instead, so the nav doesn't
+  compete with it.
+- Added 3 new genre themes — Sci-Fi, Fantasy, Action — bringing the total
+  to 8, each with its own CSS palette and chat-trigger easter egg
+  ("engage warp" / "by the ancients" / "duck and cover").
+- Drive-in visual details from the mockup, built in CSS/SVG since no
+  image-generation tool is available here: velvet curtain panels flanking
+  the hero screen, a popcorn/film-reel decorative corner, a marquee-light
+  dot border around the hero screen, a Pacifico script logo, a dashed
+  ticket-style "Create a Room" button. Not a pixel copy of the AI-generated
+  mockup art, but the same structural idea built from code.
+- Picking a theme on Home or Themes before creating a room now actually
+  applies it: `RoomView` takes an `initialTheme` prop and the room's
+  creator (its first joiner/leader) sets it once via the existing
+  `theme:set` event — no new server logic needed beyond what leadership
+  already provides.
+- Simplified `JoinScreen.jsx`: under real routing, it's only ever reached
+  via `/r/<roomId>`, so its old manual-code-entry branch was dead code and
+  got removed instead of left to rot.
+
+**Verified:** full click-through of Home → Rooms → Themes → Settings and
+back; all 8 theme poster cards render in their own color identity (an
+emergent bonus — `data-theme` on each card scopes the CSS variables to
+just that card); selecting Sci-Fi from the Themes gallery created a room
+that opened already in the Sci-Fi palette, and its "engage warp" trigger
+phrase worked correctly; a direct `/r/<roomId>` link (the original
+share-a-link flow) still works unchanged; recent-rooms list correctly
+picks up a joined room; full mobile-viewport pass on the new pages.
+
+---
+
 ## 2026-10-31 — Retro drive-in theater look, genre themes, four easter eggs
 
 **Who:** Adrian, with Claude Code, on `feature/theater-theme`.

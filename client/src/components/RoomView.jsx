@@ -12,7 +12,7 @@ const SNACK_CLICK_WINDOW_MS = 1200;
 const HOLD_TO_LEAVE_MS = 3000;
 const LEAVE_MESSAGE_MS = 900;
 
-export default function RoomView({ roomId, name, onLeave }) {
+export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [members, setMembers] = useState([]);
   const [leaderId, setLeaderId] = useState(null);
   const [theme, setTheme] = useState("classic");
@@ -39,6 +39,13 @@ export default function RoomView({ roomId, name, onLeave }) {
   useEffect(() => {
     themeRef.current = theme;
   }, [theme]);
+  // Same reasoning: read via ref inside the socket effect instead of adding
+  // as a dependency. Only meaningfully used once, when creating a new room.
+  const initialThemeRef = useRef(initialTheme);
+  useEffect(() => {
+    initialThemeRef.current = initialTheme;
+  }, [initialTheme]);
+  const initialThemeAppliedRef = useRef(false);
 
   function showToast(text) {
     setToast({ text });
@@ -137,10 +144,18 @@ export default function RoomView({ roomId, name, onLeave }) {
     function handleDisconnect() {
       setConnected(false);
     }
-    function handleJoined({ members, leaderId, theme }) {
+    function handleJoined({ members, leaderId, theme: serverTheme }) {
       setMembers(members);
       setLeaderId(leaderId);
-      if (theme) setTheme(theme);
+      if (serverTheme) setTheme(serverTheme);
+      // Applying a theme chosen on the Home/Themes page before creating a
+      // brand-new room — only makes sense if we're its leader (i.e. we just
+      // created it) and only ever happens once per room.
+      const wanted = initialThemeRef.current;
+      if (!initialThemeAppliedRef.current && wanted && leaderId === socket.id && serverTheme !== wanted) {
+        initialThemeAppliedRef.current = true;
+        socket.emit("theme:set", { roomId, theme: wanted });
+      }
     }
     function handlePresence({ members, leaderId, theme }) {
       setMembers(members);

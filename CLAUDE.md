@@ -114,12 +114,14 @@ open a PR into `main`; at least one other teammate reviews before merging.
   only — it doesn't change any class name Jobs 2/3 render into
   (`.watch-player`, `.video-panel`, `.jitsi-container`, `.watch-frame`,
   etc.), so their components didn't need any changes.
-- **Genre theme, leader-controlled:** `[data-theme="horror|romance|thriller|comedy|classic"]`
-  on `.room-view` swaps CSS custom properties (`--accent`, `--panel-bg`,
-  etc.) — the drive-in shell stays, only the palette changes. Synced via
-  server: `roomThemes` map in `server/index.js`, new `theme:set` event
-  (leader-only, same guard pattern as `leader:transfer`), broadcast as part
-  of `room:presence`/`room:joined`.
+- **Genre theme, leader-controlled, 8 total:** Classic, Horror, Romance,
+  Thriller, Comedy, Sci-Fi, Fantasy, Action — list lives in `theater.js`
+  (`THEMES`). `[data-theme="..."]` on `.room-view` (and on each poster card
+  independently — see below) swaps CSS custom properties (`--accent`,
+  `--panel-bg`, etc.) — the drive-in shell stays, only the palette changes.
+  Synced via server: `roomThemes` map in `server/index.js`, `theme:set`
+  event (leader-only, same guard pattern as `leader:transfer`), broadcast
+  as part of `room:presence`/`room:joined`.
 - **Four easter eggs**, all in `RoomView.jsx`: click a snack icon 3x fast
   for a pop animation + toast; click the marquee title 5x fast to reveal a
   hidden credits line; typing a theme's trigger phrase in chat while that
@@ -132,6 +134,30 @@ open a PR into `main`; at least one other teammate reviews before merging.
   every time the theme changes, which can wipe a small room's state
   (we hit this as a real bug — see `LOG.md`). Use `themeRef.current`
   instead, like the existing code does.
+
+### Cross-cutting: Home/Rooms/Themes/Settings pages (owned by Adrian)
+- `App.jsx` now does lightweight path-based routing (`client/src/lib/router.js`
+  — `getRoute()`/`navigate()`, no router library) instead of only
+  join-vs-room. `NavBar.jsx` (Home/Rooms/Themes/Settings) shows on every
+  page *except* an active room, which keeps its own themed header instead.
+- `HomePage.jsx`: the drive-in hero (marquee screen, curtains, popcorn/film
+  reel decor, ticket-style "Create a Room" button) plus the theme-picker
+  grid from the room header, reused here so you can set a room's theme
+  before creating it (`pendingTheme` state in `App.jsx`).
+- `RoomsPage.jsx`: join-by-code form, plus a "recent rooms" list from
+  `localStorage` (`couchcrew:recentRooms`, written in `App.jsx`'s
+  `handleJoin`) so rejoining somewhere you've been doesn't need the link
+  again.
+- `ThemesPage.jsx`: a full gallery of all 8 themes — "Select Theme" creates
+  a new room with that theme already applied (`createRoom(roomId, theme)`
+  in `App.jsx` → `initialTheme` prop on `RoomView`, applied once by whoever
+  becomes that room's leader, see `RoomView.jsx`'s `handleJoined`).
+- `SettingsPage.jsx`: display name, backed by the same `couchcrew:name`
+  `localStorage` key `JoinScreen`/`RoomView` already use.
+- `JoinScreen.jsx` was simplified: under this routing, it's only ever
+  reached via `/r/<roomId>` (a real link, or one of the pages above
+  navigating there), so its old "no room id yet" branch (manual code entry
+  + its own "create a room" button) was dead code and removed.
 
 ### Integration (shared, not a 4th job)
 Combining chat + video tiles + watch player into one working room page is
