@@ -38,6 +38,10 @@ const roomMessages = new Map();
 // empty room becomes its leader; only the leader controls what's playing.
 // Lifetime matches the room's — cleared when it empties, same as above.
 const roomLeaders = new Map();
+// roomId -> genre theme string. Leader-controlled, like the sync-event
+// controls; "classic" (the base drive-in look) until the leader changes it.
+const roomThemes = new Map();
+const VALID_THEMES = new Set(["classic", "horror", "romance", "thriller", "comedy"]);
 
 function getRoomMembers(roomId) {
   const members = rooms.get(roomId);
@@ -46,7 +50,11 @@ function getRoomMembers(roomId) {
 }
 
 function roomState(roomId) {
-  return { members: getRoomMembers(roomId), leaderId: roomLeaders.get(roomId) || null };
+  return {
+    members: getRoomMembers(roomId),
+    leaderId: roomLeaders.get(roomId) || null,
+    theme: roomThemes.get(roomId) || "classic",
+  };
 }
 
 function addMessage(roomId, message) {
@@ -116,6 +124,14 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room:presence", roomState(roomId));
   });
 
+  // Only the current leader sets the room's genre theme.
+  socket.on("theme:set", ({ roomId, theme }) => {
+    if (!roomId || !VALID_THEMES.has(theme)) return;
+    if (roomLeaders.get(roomId) !== socket.id) return;
+    roomThemes.set(roomId, theme);
+    io.to(roomId).emit("room:presence", roomState(roomId));
+  });
+
   socket.on("disconnect", () => {
     if (!joinedRoomId) return;
     const members = rooms.get(joinedRoomId);
@@ -127,6 +143,7 @@ io.on("connection", (socket) => {
         rooms.delete(joinedRoomId);
         roomMessages.delete(joinedRoomId);
         roomLeaders.delete(joinedRoomId);
+        roomThemes.delete(joinedRoomId);
         return;
       }
       // Leadership follows along if the leader leaves, so the room never

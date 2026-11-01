@@ -106,6 +106,33 @@ open a PR into `main`; at least one other teammate reviews before merging.
   else becomes leader automatically instead. Acceptable for this artifact's
   scope; not fixed.
 
+### Cross-cutting: retro drive-in theater look + genre themes + easter eggs (owned by Adrian)
+- `index.html` (fonts), `client/src/App.css`, `client/src/components/RoomView.jsx`,
+  `client/src/lib/theater.js` (theme/snack/easter-egg constants).
+- Visual shell: Bungee/Oswald fonts, starfield background, neon marquee
+  title, marquee-light glow border on the watch screen. This is CSS/markup
+  only — it doesn't change any class name Jobs 2/3 render into
+  (`.watch-player`, `.video-panel`, `.jitsi-container`, `.watch-frame`,
+  etc.), so their components didn't need any changes.
+- **Genre theme, leader-controlled:** `[data-theme="horror|romance|thriller|comedy|classic"]`
+  on `.room-view` swaps CSS custom properties (`--accent`, `--panel-bg`,
+  etc.) — the drive-in shell stays, only the palette changes. Synced via
+  server: `roomThemes` map in `server/index.js`, new `theme:set` event
+  (leader-only, same guard pattern as `leader:transfer`), broadcast as part
+  of `room:presence`/`room:joined`.
+- **Four easter eggs**, all in `RoomView.jsx`: click a snack icon 3x fast
+  for a pop animation + toast; click the marquee title 5x fast to reveal a
+  hidden credits line; typing a theme's trigger phrase in chat while that
+  theme is active (list in `theater.js`) triggers a visual flourish for the
+  whole room — this rides along on the already-broadcast chat message, no
+  new server event needed; holding "Leave room" for 3 seconds (a plain
+  click does nothing) shows a theatrical pause before actually leaving.
+- **Gotcha if you touch `RoomView.jsx`'s socket effect:** don't add `theme`
+  to that `useEffect`'s dependency array. It would reconnect the socket
+  every time the theme changes, which can wipe a small room's state
+  (we hit this as a real bug — see `LOG.md`). Use `themeRef.current`
+  instead, like the existing code does.
+
 ### Integration (shared, not a 4th job)
 Combining chat + video tiles + watch player into one working room page is
 everyone's job. This happens after each person's slice works on its own
