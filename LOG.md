@@ -5,6 +5,51 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-31 — Retro drive-in theater look, genre themes, four easter eggs
+
+**Who:** Adrian, with Claude Code, on `feature/theater-theme`.
+
+**What we decided:** Adrian wanted the site to actually feel like a venue —
+a retro drive-in/80s theater — with genre-based mood themes (leader picks
+one, like dimming the lights for a horror movie) and some hidden
+interactive touches, not just a functional UI.
+
+**What we built:**
+- Visual shell: Bungee/Oswald fonts, a subtle starfield background, a neon
+  marquee room title, a glowing marquee-light border around the watch
+  screen. CSS/markup only in `RoomView.jsx`/`App.css` — no class names Jobs
+  2/3 render into were touched, so their components needed zero changes.
+- Leader-controlled genre theme (Classic/Horror/Romance/Thriller/Comedy):
+  `data-theme` attribute swaps CSS custom properties for the accent color
+  and panel tones. Synced via a new `theme:set` server event, guarded the
+  same way `leader:transfer` is.
+- Four easter eggs: a secret snack-click animation (3 fast clicks), a
+  marquee-title click-mash that reveals a hidden credits line (5 fast
+  clicks), genre-matched chat trigger words that set off a visual flourish
+  for the whole room (rides along on the already-broadcast chat message —
+  no new server event needed), and a hold-to-leave button (holding 3s shows
+  a theatrical pause before actually leaving; a plain click does nothing).
+
+**A real bug we hit and fixed:** the socket-listener `useEffect` in
+`RoomView.jsx` originally had `theme` in its dependency array, so changing
+the theme tore down and reconnected the socket every time — which, in a
+room with only one person testing, briefly emptied the room and wiped its
+server-side state (including the theme itself, snapping it back to
+"classic" instantly). Fixed by moving the theme read inside the chat-egg
+handler to a ref (`themeRef`) instead of a dependency, so the effect no
+longer needs `theme` in its array. Root-caused by watching the actual
+`room:presence` payload in the console (it was already correct — `theme:
+"horror"` — before the reconnect silently undid it), not by guessing.
+
+**Verified:** all five themes switch correctly and instantly; all four
+easter eggs triggered and behaved as designed in a real browser; confirmed
+Henry's Jitsi call and John's synced YouTube playback both still work
+correctly inside the new shell (loaded a real video, joined a real Jitsi
+room); full mobile-viewport (375px) pass — theme chips wrap, snack bar
+fits, nothing overflows.
+
+---
+
 ## 2026-10-30 — Room leader: one person controls what's playing
 
 **Who:** Adrian, with Claude Code, on `feature/room-leader`.
