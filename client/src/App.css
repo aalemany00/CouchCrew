@@ -592,17 +592,23 @@ button.secondary.leave {
   flex-wrap: wrap;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--panel-border);
-  background: rgba(0, 0, 0, 0.3);
+  background: #000;
+}
+
+.nav-glow-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #e8303f, transparent);
+  box-shadow: 0 0 8px #e8303f;
 }
 
 .nav-logo {
   background: none;
   padding: 0;
-  font-family: "Pacifico", cursive;
-  font-size: 1.4rem;
-  color: var(--accent);
-  text-shadow: 0 0 8px var(--accent-soft);
+  font-family: "Lobster", cursive;
+  font-size: 1.6rem;
+  color: #ffe3cf;
+  text-shadow: 0 2px 0 #c4172a, 0 3px 6px rgba(0, 0, 0, 0.5);
+  transform: rotate(-3deg);
 }
 
 .nav-links {
@@ -624,33 +630,57 @@ button.secondary.leave {
   border-radius: 0;
 }
 
+.nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-icon {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  background: none;
+  padding: 0;
+  line-height: 1;
+}
+
+.nav-icon-button {
+  cursor: pointer;
+}
+
 /* ===== Home page hero (drive-in marquee screen) ===== */
 .home-page {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem;
 }
 
 .theater-hero {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 4rem;
+  padding: 1.5rem 4.5rem;
 }
 
 .curtain {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 70px;
-  background: repeating-linear-gradient(
-    90deg,
-    #6b0f1a 0 10px,
-    #8a1624 10px 20px
+  width: 85px;
+  background: repeating-linear-gradient(90deg, #6b0f1a 0 9px, #8a1624 9px 18px);
+  box-shadow: inset -8px 0 16px rgba(0, 0, 0, 0.55);
+  clip-path: polygon(
+    0 0, 100% 0, 100% 92%,
+    88% 100%, 75% 92%, 62% 100%, 50% 92%, 38% 100%, 25% 92%, 12% 100%, 0 92%
   );
-  border-radius: 0 0 40px 40px;
-  box-shadow: inset -6px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.curtain::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(180deg, #d4af37, #a9822a);
 }
 
 .curtain-left {
@@ -662,31 +692,26 @@ button.secondary.leave {
   transform: scaleX(-1);
 }
 
-.hero-decor {
-  position: absolute;
-  left: 0.5rem;
-  bottom: -0.5rem;
-  font-size: 3rem;
+.hero-main {
   display: flex;
-  align-items: flex-end;
-  gap: 0.25rem;
-  z-index: 1;
+  align-items: stretch;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.film-reel {
-  font-size: 2rem;
-  transform: rotate(-15deg);
+.hero-screen-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
 }
 
 .hero-screen {
   position: relative;
-  flex: 1;
-  max-width: 700px;
   text-align: center;
   padding: 2.5rem 1.5rem;
   border-radius: 12px;
+  overflow: hidden;
   border: 4px solid var(--accent-soft);
-  background: radial-gradient(ellipse at 50% 0%, rgba(242, 183, 5, 0.12), transparent 70%), #10141f;
   box-shadow:
     0 0 0 8px #0b0d17,
     0 0 0 9px var(--accent),
@@ -706,35 +731,148 @@ button.secondary.leave {
   z-index: -1;
 }
 
+.screen-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.hero-screen-content {
+  position: relative;
+  z-index: 1;
+}
+
+.popcorn-reel-art {
+  position: absolute;
+  left: -2.5rem;
+  bottom: -1.5rem;
+  width: 130px;
+  height: auto;
+  z-index: 2;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+
 .hero-logo {
-  font-family: "Pacifico", cursive;
-  font-size: 3rem;
-  color: var(--accent);
-  text-shadow: 0 0 10px var(--accent), 0 0 24px var(--accent);
+  font-family: "Lobster", cursive;
+  font-size: 3.2rem;
+  color: #ffe3cf;
+  text-shadow: 0 3px 0 #c4172a, 0 6px 14px rgba(0, 0, 0, 0.6);
   margin: 0;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+.hero-logo-underline {
+  display: block;
+  width: 160px;
+  height: 14px;
+  margin: -4px auto 0;
+  border-bottom: 4px solid #c4172a;
+  border-radius: 50%;
+  transform: rotate(-2deg);
 }
 
 .hero-tagline {
   letter-spacing: 0.15em;
-  color: var(--text-dim);
-  margin: 0.5rem 0 1.5rem;
+  color: #f2f2f5;
+  margin: 0.75rem 0 1.5rem;
   font-size: 0.85rem;
 }
 
 .ticket-button {
-  background: var(--accent);
+  background: linear-gradient(180deg, #ffd24d, var(--accent));
   color: #1a1408;
   font-weight: 700;
   font-size: 1rem;
   padding: 0.8rem 2rem;
   border-radius: 999px;
-  border: 2px dashed rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(0, 0, 0, 0.25);
 }
 
 .ticket-button.small {
   padding: 0.4rem 1rem;
   font-size: 0.85rem;
   margin-top: 0.75rem;
+}
+
+/* ===== Chat preview docked beside the hero screen ===== */
+.hero-chat-preview {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #5a1620;
+  background: #140a10;
+}
+
+.hero-chat-preview h2 {
+  font-family: "Lobster", cursive;
+  color: #ff8fa3;
+  text-shadow: 0 0 10px rgba(255, 50, 80, 0.5);
+  margin: 0 0 0.75rem;
+  border-bottom: 1px solid #5a1620;
+  padding-bottom: 0.5rem;
+}
+
+.hero-chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-dim);
+  gap: 0.5rem;
+  min-height: 140px;
+}
+
+.chat-bubble-icon {
+  font-size: 1.6rem;
+  opacity: 0.6;
+}
+
+.hero-chat-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #5a1620;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+/* ===== Theater seats strip + divider headings ===== */
+.seats-row {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin-top: 1rem;
+  opacity: 0.5;
+}
+
+.divider-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+}
+
+.divider-heading::before,
+.divider-heading::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #e8303f);
+}
+
+.divider-heading::after {
+  background: linear-gradient(90deg, #e8303f, transparent);
 }
 
 /* ===== Theme poster cards (Home picker + Themes gallery) ===== */
@@ -836,15 +974,20 @@ button.secondary.leave {
 
 @media (max-width: 700px) {
   .theater-hero {
-    padding: 1rem 1.5rem;
+    padding: 1rem 1.25rem;
   }
   .curtain {
-    width: 30px;
+    width: 20px;
   }
-  .hero-decor {
-    display: none;
+  .popcorn-reel-art {
+    width: 90px;
+    left: -1rem;
+    bottom: -1rem;
   }
   .hero-logo {
     font-size: 2.2rem;
+  }
+  .hero-chat-preview {
+    width: 100%;
   }
 }

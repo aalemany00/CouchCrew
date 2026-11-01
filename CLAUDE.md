@@ -141,9 +141,15 @@ open a PR into `main`; at least one other teammate reviews before merging.
   join-vs-room. `NavBar.jsx` (Home/Rooms/Themes/Settings) shows on every
   page *except* an active room, which keeps its own themed header instead.
 - `HomePage.jsx`: the drive-in hero (marquee screen, curtains, popcorn/film
-  reel decor, ticket-style "Create a Room" button) plus the theme-picker
-  grid from the room header, reused here so you can set a room's theme
-  before creating it (`pendingTheme` state in `App.jsx`).
+  reel decor, ticket-style "Create a Room" button, a docked chat preview
+  panel) plus the theme-picker grid from the room header, reused here so
+  you can set a room's theme before creating it (`pendingTheme` state in
+  `App.jsx`). The hero's illustrations (`TheaterArt.jsx`: `ScreenBackdrop`,
+  `PopcornAndReel`, `SeatsRow`) are built to match Adrian's one reference
+  mockup closely — they're hand-coded SVG/CSS, not real artwork, since this
+  environment has no image-generation tool. **Only the Classic hero is
+  matched to that mockup on purpose** — the other 7 themes' poster cards
+  are intentionally left simpler, since no reference image exists for them.
 - `RoomsPage.jsx`: join-by-code form, plus a "recent rooms" list from
   `localStorage` (`couchcrew:recentRooms`, written in `App.jsx`'s
   `handleJoin`) so rejoining somewhere you've been doesn't need the link

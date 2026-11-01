@@ -5,6 +5,50 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-10-31 — Rebuilt the Home hero to match the mockup closely
+
+**Who:** Adrian, with Claude Code, on `feature/theater-hero-rebuild`.
+
+**What happened:** the previous pass ("Home/Rooms/Themes/Settings pages")
+matched the mockup's *structure* but not its look — plain icon+label theme
+cards instead of poster art, emoji instead of illustrated popcorn/reel, a
+centered gold Pacifico logo instead of the mockup's tilted red/cream
+script. Adrian asked for a much closer match, scoped to just the Classic
+hero (the only screen he actually gave a reference image for — the other
+7 themes' visuals are intentionally left alone).
+
+**What we built, all hand-coded SVG/CSS since there's no image-generation
+tool in this environment:**
+- New `TheaterArt.jsx`: `ScreenBackdrop` (night-sky gradient, fanned
+  searchlight beams, a city skyline, two palm trees — each a curved trunk
+  with six fan-shaped fronds reused via `<use>`), `PopcornAndReel` (a
+  striped bucket with overflowing kernels, a film reel with an unspooling
+  perforated strip), `SeatsRow` (a faint repeated seat-silhouette strip).
+- Logo: swapped Pacifico for Lobster, red/cream coloring with a drop-shadow
+  outline, a slight tilt, and a curved underline swoosh beneath it —
+  matches the mockup's script style much more closely than the old flat
+  gold version.
+- Curtains: scalloped bottom edge (CSS `clip-path`) with a gold fringe
+  trim line, now spanning the full hero height (including behind the new
+  chat panel) instead of just the screen.
+- Added the mockup's docked chat preview panel beside the hero screen —
+  explicitly a preview, not live chat (nobody's in a room yet on this
+  page), matching the mockup's own "Start chatting with your crew!" empty
+  state so it isn't a misleading fake feature.
+- Nav bar: added mic/camera icons (decorative — they only mean something
+  inside a real room's call) and a profile icon that's a real shortcut to
+  Settings, plus the glowing red divider line beneath the nav.
+- "Choose a theme" heading now has the mockup's flanking divider lines.
+
+**Verified:** full visual comparison against the mockup side by side —
+palm trees needed a redo (first attempt looked like loose leaves, not a
+tree; rebuilt with a proper fan-of-fronds shape); confirmed "Create a
+Room" still works and lands in a real room; full mobile-viewport pass
+(chat panel wraps below the screen, curtains/popcorn scale down, nothing
+overflows).
+
+---
+
 ## 2026-10-31 — Home/Rooms/Themes/Settings pages, 3 more genres
 
 **Who:** Adrian, with Claude Code, on `feature/home-and-themes`.
