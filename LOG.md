@@ -5,6 +5,55 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-01 — All 8 themes get a real visual identity, not just a palette
+
+**Who:** Adrian, with Claude Code, on `feature/theme-scenes`.
+
+**What happened:** the 7 non-Classic themes previously only changed accent
+color (`--accent`/`--panel-bg`) against the same shared Classic SVG
+backdrop — intentional at the time (`CLAUDE.md` noted only Classic had a
+reference image). Adrian then supplied ChatGPT-generated mockups for all
+8 themes' Lobby and In-Room screens, each with a genuinely different scene
+(crypt/candles for Horror, venetian-blind noir office for Thriller, rose
+arch for Romance, space-station window for Sci-Fi, castle/stained-glass
+for Fantasy, crate yard for Action, marquee/masks for Comedy).
+
+**Decision on scope, to ship fast:** hand-building 16 fully illustrated
+SVG scenes (what Classic's hero took) wasn't realistic before Nov 8,
+especially with Henry about to rebuild the video panel on WebRTC. Instead:
+- Added a `--scene-bg` CSS variable per theme (layered gradients +
+  `repeating-linear-gradient` for Thriller's blinds and Action's hazard
+  stripes) applied to both the Home hero and the room screen.
+- Added `--curtain-a`/`--curtain-b` per theme so curtain color matches
+  (navy for Thriller, rose for Romance, forest/gold for Fantasy, etc.)
+  instead of staying theater-red for every theme.
+- Added a glowing theme-icon badge (reusing each theme's existing emoji
+  from `theater.js`) in place of the popcorn/reel art for every non-Classic
+  theme, since that art is Classic-specific.
+- Added matching curtain strips to the room screen (`RoomView.jsx`), which
+  didn't have any before.
+- Did **not** touch `.room-grid`'s internal layout (video/chat/watch
+  panels) — the reference mockups show a single-big-frame layout with a
+  bottom icon bar, which is a real structural change and exactly the
+  chrome a custom WebRTC call UI would need. Rebuilding it now would
+  likely conflict with Henry's upcoming video rebuild; left as a follow-up
+  once that lands. Also skipped the "{THEME} – LOBBY" caption bar visible
+  in every mockup — reads like a label the mockups' own generator added to
+  keep the batch identifiable, not real intended UI chrome.
+
+**Verified:** cycled through all 8 themes on Home (background, curtains,
+and badge all switch correctly, confirmed via screenshot for each) and
+confirmed the room screen picks up the same scene background and curtains
+without breaking the existing chat/video/watch layout.
+
+**Open items:**
+- Room layout restructure (single frame + bottom call-control bar) once
+  Henry's WebRTC rebuild lands — flagged to him.
+- Still CSS-only scenes, not the fully illustrated art in the mockups;
+  revisit if there's time after the video rebuild and Nov 8 crunch.
+
+---
+
 ## 2026-10-31 — Rebuilt the Home hero to match the mockup closely
 
 **Who:** Adrian, with Claude Code, on `feature/theater-hero-rebuild`.

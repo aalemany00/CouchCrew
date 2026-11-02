@@ -12,6 +12,10 @@
   --text-dim: #b8a98f;
   --font-display: "Bungee", cursive;
   --font-body: "Oswald", system-ui, sans-serif;
+  --curtain-a: #6b0f1a;
+  --curtain-b: #8a1624;
+  --scene-bg: radial-gradient(circle at 50% 18%, rgba(242, 183, 5, 0.1), transparent 55%),
+    linear-gradient(180deg, #241a3a 0%, #2e1f45 55%, #140d22 100%);
 }
 
 [data-theme="horror"] {
@@ -20,6 +24,9 @@
   --panel-bg: #170a0d;
   --panel-border: #4a1620;
   --text: #f4e3e3;
+  --curtain-a: #2c0507;
+  --curtain-b: #4a0b10;
+  --scene-bg: radial-gradient(circle at 50% 28%, #5a0b14 0%, #1a0306 55%, #050202 100%);
 }
 
 [data-theme="romance"] {
@@ -28,6 +35,9 @@
   --panel-bg: #1c0f1e;
   --panel-border: #4a2d4a;
   --text: #f7e6f2;
+  --curtain-a: #4a0f30;
+  --curtain-b: #6e1a44;
+  --scene-bg: radial-gradient(circle at 50% 30%, #5a1a3a 0%, #2a0f22 55%, #150a16 100%);
 }
 
 [data-theme="thriller"] {
@@ -36,6 +46,10 @@
   --panel-bg: #0c1520;
   --panel-border: #1d3a4a;
   --text: #e3f6ff;
+  --curtain-a: #0a1c28;
+  --curtain-b: #123044;
+  --scene-bg: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 6px, transparent 6px 16px),
+    linear-gradient(180deg, #11212e 0%, #060c12 75%);
 }
 
 [data-theme="comedy"] {
@@ -44,6 +58,9 @@
   --panel-bg: #201c0a;
   --panel-border: #4a4420;
   --text: #fdf6e3;
+  --curtain-a: #6b0f1a;
+  --curtain-b: #8a1624;
+  --scene-bg: radial-gradient(circle at 50% 24%, #5a4a10 0%, #241c08 55%, #120e04 100%);
 }
 
 [data-theme="scifi"] {
@@ -52,6 +69,11 @@
   --panel-bg: #130c22;
   --panel-border: #3a2d6a;
   --text: #e8e6ff;
+  --curtain-a: #16123a;
+  --curtain-b: #241d5a;
+  --scene-bg: radial-gradient(circle at 72% 18%, #3a2a6a 0%, transparent 55%),
+    radial-gradient(circle at 18% 72%, #163a4a 0%, transparent 50%),
+    linear-gradient(180deg, #0a0820 0%, #05030f 100%);
 }
 
 [data-theme="fantasy"] {
@@ -60,6 +82,9 @@
   --panel-bg: #0d1f15;
   --panel-border: #1f4a2d;
   --text: #ecf7ee;
+  --curtain-a: #1f3a1f;
+  --curtain-b: #2d5a2d;
+  --scene-bg: radial-gradient(circle at 50% 22%, #2a4a2a 0%, #15230f 55%, #0a130a 100%);
 }
 
 [data-theme="action"] {
@@ -68,6 +93,10 @@
   --panel-bg: #200d05;
   --panel-border: #4a2410;
   --text: #ffe9d8;
+  --curtain-a: #2a1405;
+  --curtain-b: #4a2408;
+  --scene-bg: repeating-linear-gradient(45deg, rgba(255, 106, 31, 0.08) 0 10px, transparent 10px 20px),
+    radial-gradient(circle at 50% 78%, #5a2a05 0%, #200d05 55%, #0f0502 100%);
 }
 
 body {
@@ -132,10 +161,22 @@ button {
 }
 
 .room-view {
-  padding: 1rem;
+  padding: 1rem 4.5rem;
   max-width: 1100px;
   margin: 0 auto;
   position: relative;
+  background: var(--scene-bg);
+  border-radius: 16px;
+  transition: background 0.3s ease;
+}
+
+.room-view .curtain {
+  z-index: 0;
+}
+
+.room-view > *:not(.curtain) {
+  position: relative;
+  z-index: 1;
 }
 
 .room-header-top {
@@ -665,7 +706,8 @@ button.secondary.leave {
   top: 0;
   bottom: 0;
   width: 85px;
-  background: repeating-linear-gradient(90deg, #6b0f1a 0 9px, #8a1624 9px 18px);
+  background: repeating-linear-gradient(90deg, var(--curtain-a) 0 9px, var(--curtain-b) 9px 18px);
+  transition: background 0.3s ease;
   box-shadow: inset -8px 0 16px rgba(0, 0, 0, 0.55);
   clip-path: polygon(
     0 0, 100% 0, 100% 92%,
@@ -712,10 +754,34 @@ button.secondary.leave {
   border-radius: 12px;
   overflow: hidden;
   border: 4px solid var(--accent-soft);
+  background: var(--scene-bg);
   box-shadow:
     0 0 0 8px #0b0d17,
     0 0 0 9px var(--accent),
     0 0 40px var(--accent-soft);
+}
+
+/* The hand-coded night-sky/skyline/palm SVG is the Classic theater's own
+   look (the one mockup this was built against — see CLAUDE.md). The other
+   7 themes use their own --scene-bg gradient instead of that SVG. */
+.theater-hero[data-theme]:not([data-theme="classic"]) .screen-backdrop {
+  display: none;
+}
+
+.theme-icon-badge {
+  position: absolute;
+  left: -1rem;
+  bottom: -1rem;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+  filter: drop-shadow(0 0 14px var(--accent));
+  z-index: 2;
 }
 
 .hero-screen::before {

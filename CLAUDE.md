@@ -147,9 +147,12 @@ open a PR into `main`; at least one other teammate reviews before merging.
   `App.jsx`). The hero's illustrations (`TheaterArt.jsx`: `ScreenBackdrop`,
   `PopcornAndReel`, `SeatsRow`) are built to match Adrian's one reference
   mockup closely — they're hand-coded SVG/CSS, not real artwork, since this
-  environment has no image-generation tool. **Only the Classic hero is
-  matched to that mockup on purpose** — the other 7 themes' poster cards
-  are intentionally left simpler, since no reference image exists for them.
+  environment has no image-generation tool. **Only the Classic hero is a
+  full hand-illustrated match** to its one reference image. Adrian later
+  supplied reference mockups for all 8 themes (lobby + room); those get a
+  faster CSS-only treatment instead (a `--scene-bg` gradient, themed
+  curtain colors, a theme-icon badge — see `App.css` and LOG.md's
+  2026-11-01 entry) rather than full illustrations, to ship before Nov 8.
 - `RoomsPage.jsx`: join-by-code form, plus a "recent rooms" list from
   `localStorage` (`couchcrew:recentRooms`, written in `App.jsx`'s
   `handleJoin`) so rejoining somewhere you've been doesn't need the link

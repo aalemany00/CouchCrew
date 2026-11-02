@@ -8,9 +8,11 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
     onCreate(generateRoomCode(), pendingTheme);
   }
 
+  const activeTheme = THEMES.find((t) => t.id === pendingTheme);
+
   return (
     <div className="home-page">
-      <div className="theater-hero">
+      <div className="theater-hero" data-theme={pendingTheme || "classic"}>
         <div className="curtain curtain-left" aria-hidden="true" />
         <div className="curtain curtain-right" aria-hidden="true" />
 
@@ -31,7 +33,13 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
                 </button>
               </div>
             </div>
-            <PopcornAndReel />
+            {activeTheme ? (
+              <div className="theme-icon-badge" aria-hidden="true">
+                {activeTheme.icon}
+              </div>
+            ) : (
+              <PopcornAndReel />
+            )}
           </div>
 
           {/* A preview, not a real chat — nobody's in a room yet on this

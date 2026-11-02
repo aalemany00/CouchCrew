@@ -198,6 +198,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
   return (
     <div className="room-view" data-theme={theme}>
+      <div className="curtain curtain-left" aria-hidden="true" />
+      <div className="curtain curtain-right" aria-hidden="true" />
       {flourish && <div className={`flourish flourish-${flourish}`} aria-hidden="true" />}
       {toast && <div className="toast">{toast.text}</div>}
       {leaving && <div className="leave-overlay">Are you sure? It's just getting good...</div>}
