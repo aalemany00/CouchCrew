@@ -9,7 +9,7 @@ import SettingsPage from "./components/SettingsPage";
 import { getRoute, navigate, setRoomPath } from "./lib/router";
 import "./App.css";
 import "./immersive-theater.css";
-import CinemaScenery from "./components/CinemaScenery";
+import PixelTheaterScenery from "./components/PixelTheaterScenery";
 
 const MAX_RECENT_ROOMS = 5;
 
@@ -81,7 +81,7 @@ function App() {
     if (!session || session.roomId !== route.roomId) {
       return (
         <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
-          <CinemaScenery theme={pendingTheme || "classic"} />
+          <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
           <JoinScreen initialRoomId={route.roomId} onJoin={handleJoin} />
         </div>
       );
@@ -98,7 +98,7 @@ function App() {
 
   return (
     <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
-      <CinemaScenery theme={pendingTheme || "classic"} />
+      <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
       <NavBar currentPage={route.page} />
       {route.page === "rooms" && <RoomsPage />}
       {route.page === "themes" && <ThemesPage onCreate={createRoom} />}
