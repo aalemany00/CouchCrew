@@ -17,7 +17,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
         <div className="hero-main">
           <div className="hero-screen-wrap">
             <div className="hero-screen">
-              <ScreenBackdrop />
+              {!pendingTheme || pendingTheme === "classic" ? <ScreenBackdrop /> : <div className="genre-screen-backdrop" aria-hidden="true" />}
               <div className="hero-screen-content">
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
@@ -33,8 +33,6 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
             </div>
             <PopcornAndReel />
           </div>
-
-
         </div>
       </div>
 
