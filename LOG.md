@@ -222,7 +222,13 @@ frame was only ~290x165px in the desktop video column, so added
 `min-height: 420px`. The testing browser blocks camera access, so no actual
 call was possible there.
 
-**Not yet verified:** a real two-person call, and screen share / mic /
+**Real test (all three of us, own devices):** the Jitsi call works, with
+Adrian, Henry and John each in a tile. The shared YouTube player did not:
+YouTube showed "Sign in to confirm you're not a bot", so nothing played.
+Open question for Job 3 / integration: whether that's YouTube distrusting
+the embed (and whether anything we control fixes it) — not yet investigated.
+
+**Still not verified:** screen share, and mic /
 camera on an actual phone browser. Note: mobile browsers generally can't
 screen share at all, so on phones the Jitsi share option may be absent.
 
