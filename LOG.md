@@ -228,6 +228,12 @@ YouTube showed "Sign in to confirm you're not a bot", so nothing played.
 Open question for Job 3 / integration: whether that's YouTube distrusting
 the embed (and whether anything we control fixes it) — not yet investigated.
 
+**Follow-up:** sometimes video/voice isn't shared between us. Cause unknown
+(different Jitsi rooms, muted/blocked devices, NAT/firewall, or public-server
+limits are the candidates). Added a diagnostic under the call frame: live
+participant count, the Jitsi room name, and a log of join/leave/mute/error
+events, to be read on the next test.
+
 **Still not verified:** screen share, and mic /
 camera on an actual phone browser. Note: mobile browsers generally can't
 screen share at all, so on phones the Jitsi share option may be absent.

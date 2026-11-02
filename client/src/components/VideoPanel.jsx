@@ -27,6 +27,9 @@ export default function VideoPanel({ roomId }) {
   const apiRef = useRef(null);
   const [status, setStatus] = useState("idle"); // idle | joining | joined
   const [error, setError] = useState("");
+  // Diagnostics: what Jitsi reports, so "can't see/hear each other" can be
+  // traced to different rooms, muted/blocked devices, or a dropped call.
+  const [diag, setDiag] = useState({ count: 0, events: [] });
 
   // Leaving the room (or switching rooms) should also leave the call.
   useEffect(() => {
@@ -51,11 +54,45 @@ export default function VideoPanel({ roomId }) {
         configOverwrite: { prejoinPageEnabled: false, disableDeepLinking: true },
       });
       apiRef.current = api;
+
+      const log = (text) =>
+        setDiag((d) => ({
+          ...d,
+          events: [...d.events, `${new Date().toLocaleTimeString()} ${text}`].slice(-8),
+        }));
+      const refreshCount = () =>
+        api
+          .getNumberOfParticipants()
+          .then((count) => setDiag((d) => ({ ...d, count })))
+          .catch(() => {});
+      api.addEventListener("videoConferenceJoined", (e) => {
+        log(`joined ${e.roomName}`);
+        refreshCount();
+      });
+      api.addEventListener("participantJoined", (e) => {
+        log(`${e.displayName || "someone"} joined`);
+        refreshCount();
+      });
+      api.addEventListener("participantLeft", () => {
+        log("someone left");
+        refreshCount();
+      });
+      api.addEventListener("audioMuteStatusChanged", (e) =>
+        log(`my mic ${e.muted ? "muted" : "on"}`),
+      );
+      api.addEventListener("videoMuteStatusChanged", (e) =>
+        log(`my camera ${e.muted ? "off" : "on"}`),
+      );
+      api.addEventListener("errorOccurred", (e) =>
+        log(`error: ${e.error?.name || e.error?.message || "unknown"}`),
+      );
       api.addEventListener("videoConferenceLeft", () => {
         api.dispose();
         apiRef.current = null;
+        setDiag({ count: 0, events: [] });
         setStatus("idle");
       });
+      setDiag({ count: 0, events: [] });
       setStatus("joined");
     } catch (err) {
       setError(err.message || "Could not join the call");
@@ -66,6 +103,7 @@ export default function VideoPanel({ roomId }) {
   function leaveCall() {
     apiRef.current?.dispose();
     apiRef.current = null;
+    setDiag({ count: 0, events: [] });
     setStatus("idle");
   }
 
@@ -87,9 +125,22 @@ export default function VideoPanel({ roomId }) {
         hidden={status !== "joined"}
       />
       {status === "joined" && (
-        <button type="button" className="secondary leave" onClick={leaveCall}>
-          Leave call
-        </button>
+        <>
+          <p className="video-diag-count">
+            In the call: {diag.count} · call room: couchcrew-{roomId}
+          </p>
+          <details className="video-diag">
+            <summary>Call diagnostics</summary>
+            <ul>
+              {diag.events.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </details>
+          <button type="button" className="secondary leave" onClick={leaveCall}>
+            Leave call
+          </button>
+        </>
       )}
     </div>
   );

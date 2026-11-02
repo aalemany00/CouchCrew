@@ -531,6 +531,22 @@ button.secondary.leave {
   }
 }
 
+.video-diag-count {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.video-diag {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.video-diag ul {
+  margin: 0.25rem 0;
+  padding-left: 1.1rem;
+}
+
 .video-error {
   color: #e8828e;
 }
