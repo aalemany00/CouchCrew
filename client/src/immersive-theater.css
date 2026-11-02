@@ -1,0 +1,132 @@
+
+/* Immersive theater redesign. All decorations are noninteractive and sit
+   behind real controls; genre changes are visual, not a new room protocol. */
+:root { --cinema-glow:#ffad50; }
+body { background:#09050a; color:#f9eadd; }
+body:has(.cinema-shell) { background:#090509; }
+.cinema-shell {
+  --scene:#211021; --scene-accent:#ffae61; --scene-secondary:#e63d55;
+  --curtain-one:#5e0918; --curtain-two:#a01c32;
+  position:relative; isolation:isolate; min-height:100vh;
+  overflow:hidden; color:#fff0dd;
+  background:radial-gradient(ellipse at 50% 12%,color-mix(in srgb,var(--scene-accent) 16%,transparent),transparent 55%),#09060b;
+}
+.cinema-shell[data-theme="thriller"] { --scene:#071925;--scene-accent:#4acdea;--scene-secondary:#187f9b;--curtain-one:#082b3b;--curtain-two:#14526b; }
+.cinema-shell[data-theme="horror"] { --scene:#1e090c;--scene-accent:#ed513b;--scene-secondary:#b31b29;--curtain-one:#31070c;--curtain-two:#680d16; }
+.cinema-shell[data-theme="comedy"] { --scene:#40200f;--scene-accent:#ffc14e;--scene-secondary:#e47540;--curtain-one:#8c2316;--curtain-two:#d54c27; }
+.cinema-shell[data-theme="romance"] { --scene:#321329;--scene-accent:#ff8fc5;--scene-secondary:#e14b95;--curtain-one:#701638;--curtain-two:#b52d66; }
+.cinema-shell[data-theme="scifi"] { --scene:#0a163a;--scene-accent:#4ee7ff;--scene-secondary:#a45eff;--curtain-one:#161c5f;--curtain-two:#3c2580; }
+.cinema-shell[data-theme="fantasy"] { --scene:#142819;--scene-accent:#f8c677;--scene-secondary:#79ba6d;--curtain-one:#28431f;--curtain-two:#586630; }
+.cinema-shell[data-theme="action"] { --scene:#39190d;--scene-accent:#ff8539;--scene-secondary:#f44522;--curtain-one:#352015;--curtain-two:#784027; }
+.cinema-shell .cinema-scenery { position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden; }
+.cinema-scenery::before {
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 20%,color-mix(in srgb,var(--scene-accent) 20%,transparent),transparent 60%),
+  repeating-linear-gradient(90deg,transparent 0 90px,#ffffff05 91px 92px),
+  linear-gradient(180deg,#160910 0%,var(--scene) 65%,#080507 100%);
+}
+.cinema-scenery .scene-curtain { position:absolute;z-index:1;top:0;bottom:0;width:clamp(20px,7vw,110px);
+  background:repeating-linear-gradient(90deg,var(--curtain-one) 0 13px,var(--curtain-two) 14px 24px,var(--curtain-one) 28px 36px);
+  box-shadow:inset -20px 0 22px #0009, 4px 0 20px #000b;opacity:.88; }
+.cinema-scenery .scene-curtain.left{left:0;}
+.cinema-scenery .scene-curtain.right{right:0;transform:scaleX(-1)}
+.cinema-scenery .scene-top{position:absolute;z-index:2;left:0;right:0;top:0;height:36px;
+  background:repeating-radial-gradient(ellipse at 50% 0%,var(--curtain-two) 0 18px,var(--curtain-one) 19px 35px);
+  border-bottom:3px solid color-mix(in srgb,var(--scene-accent) 75%,#000);box-shadow:0 8px 20px #0009;}
+.cinema-scenery .scene-lights{position:absolute;z-index:2;top:37px;left:9%;right:9%;height:12px;
+  background:radial-gradient(circle,var(--scene-accent) 3px,transparent 5px) left center / 26px 12px repeat-x;
+  filter:drop-shadow(0 0 7px var(--scene-accent));}
+.scene-props {position:absolute;inset:0;font-size:clamp(18px,3vw,42px);}
+.scene-props span {position:absolute;display:block;filter:drop-shadow(0 4px 12px #000);text-shadow:0 0 20px var(--scene-secondary);}
+.scene-props span:nth-child(1){top:17%;left:9%}
+.scene-props span:nth-child(2){top:30%;right:8%}
+.scene-props span:nth-child(3){top:55%;left:5%}
+.scene-props span:nth-child(4){top:66%;right:6%}
+.scene-props span:nth-child(5){top:75%;left:11%}
+.scene-props span:nth-child(6){top:12%;right:15%}
+.scene-floor{position:absolute;bottom:0;width:100%;height:24%;
+  background:repeating-linear-gradient(90deg,#0b0509aa 0 5%,transparent 5% 12%),
+    linear-gradient(0deg,#080407,transparent);opacity:.8;}
+.scene-seatbank{position:absolute;bottom:-14px;left:0;right:0;height:105px;opacity:.65;
+  background:radial-gradient(ellipse 42px 65px at 46px 75px,#5d111a 65%,#140409 72%,transparent 76%) 0 0/94px 110px repeat-x;
+  filter:drop-shadow(0 -5px 7px #000);}
+.cinema-shell[data-theme="thriller"] .scene-seatbank{filter:hue-rotate(145deg) brightness(.8)}
+.cinema-shell[data-theme="scifi"] .scene-seatbank{filter:hue-rotate(225deg) brightness(1.3)}
+.cinema-shell[data-theme="fantasy"] .scene-seatbank{filter:hue-rotate(65deg) brightness(.7)}
+.cinema-shell[data-theme="romance"] .scene-seatbank{filter:hue-rotate(315deg) brightness(1.15)}
+.cinema-shell[data-theme="comedy"] .scene-seatbank{filter:hue-rotate(30deg) brightness(1.2)}
+.cinema-shell[data-theme="action"] .scene-seatbank{filter:sepia(.9) brightness(.7)}
+.cinema-shell .home-page,.cinema-shell .page,.cinema-shell .room-view { position:relative;z-index:3; }
+.cinema-shell .home-page { max-width:1380px;padding:3rem clamp(25px,7vw,110px) 7rem; }
+.cinema-shell .theater-hero {padding:1.5rem 0;}
+.cinema-shell .theater-hero>.curtain {display:none;}
+.cinema-shell .hero-main {display:block;}
+.cinema-shell .hero-screen-wrap {max-width:1050px;margin:auto;}
+.cinema-shell .hero-screen {min-height:370px;display:grid;place-items:center;border:12px solid #24151a;
+  border-radius:12px;outline:2px solid var(--scene-accent);
+  box-shadow:0 0 0 11px #10060c,0 0 0 14px var(--scene-accent),0 0 35px var(--scene-accent),0 15px 60px #000;
+  background:linear-gradient(155deg,color-mix(in srgb,var(--scene) 90%,#000),#120c16);
+}
+.cinema-shell .hero-screen::after {content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 70%,transparent 28%,#0006 100%)}
+.cinema-shell .hero-screen-content {padding:1rem;z-index:2;}
+.cinema-shell .hero-logo {font-size:clamp(3.2rem,8vw,7.5rem);line-height:1.16;color:#ffe6ce;
+  text-shadow:0 4px 0 var(--scene-secondary),0 0 20px var(--scene-secondary),0 10px 15px #000c;}
+.cinema-shell .hero-tagline {font-size:clamp(.8rem,1.5vw,1.1rem);letter-spacing:.32em;font-weight:700;}
+.cinema-shell .ticket-button {border-radius:7px;clip-path:polygon(0 0,100% 0,100% 33%,97% 50%,100% 67%,100% 100%,0 100%,0 67%,3% 50%,0 33%);
+  background:linear-gradient(#ffe4a1,#efab41);padding:.85rem 2rem;text-transform:uppercase;letter-spacing:.07em;}
+.cinema-shell .ticket-button:hover {filter:brightness(1.1);transform:translateY(-2px);}
+.cinema-shell .hero-screen .secondary {border:1px solid var(--scene-accent);box-shadow:0 0 12px color-mix(in srgb,var(--scene-accent) 50%,transparent);text-transform:uppercase;}
+.cinema-shell .popcorn-reel-art{left:-55px;bottom:-45px;width:185px;}
+.cinema-shell .hero-chat-preview {display:none!important;}
+.cinema-shell .seats-row{height:65px;opacity:.75;}
+.cinema-shell .theme-gallery {margin-top:2.5rem;}
+.cinema-shell .divider-heading {font-family:var(--font-display);letter-spacing:.25em;font-size:clamp(1rem,2vw,1.55rem);}
+.cinema-shell .poster-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:1rem;}
+.cinema-shell .poster-card {position:relative;min-height:205px;justify-content:flex-end;overflow:hidden;
+  background:linear-gradient(180deg,transparent 0%,#050306db 72%),var(--poster-scene,var(--scene));
+  border:2px solid var(--poster-accent,var(--scene-accent));box-shadow:0 8px 22px #000a,0 0 12px color-mix(in srgb,var(--poster-accent,var(--scene-accent)) 35%,transparent);
+  transition:transform .2s,box-shadow .2s;}
+.cinema-shell .poster-card:hover,.cinema-shell .poster-card:focus-visible {transform:translateY(-5px);box-shadow:0 0 25px var(--poster-accent,var(--scene-accent));}
+.cinema-shell .poster-card.active{outline:3px solid #fff;outline-offset:3px;}
+.cinema-shell .poster-icon{font-size:3rem;margin:auto 0;filter:drop-shadow(0 0 16px var(--poster-accent,var(--scene-accent)));}
+.cinema-shell .poster-label {font-size:1rem;color:#fff;text-shadow:0 0 8px var(--poster-accent,var(--scene-accent));}
+.cinema-shell .poster-tagline{color:#e9dfe1;}
+.cinema-shell .poster-card[data-theme="classic"]{--poster-scene:radial-gradient(circle at 40% 28%,#b5583f,#260d20);--poster-accent:#ffa74c}
+.cinema-shell .poster-card[data-theme="thriller"]{--poster-scene:radial-gradient(circle at 40% 25%,#267387,#061a2d);--poster-accent:#36c9e9}
+.cinema-shell .poster-card[data-theme="horror"]{--poster-scene:radial-gradient(circle at 50% 18%,#87232a,#160407);--poster-accent:#d93b3f}
+.cinema-shell .poster-card[data-theme="comedy"]{--poster-scene:radial-gradient(circle at 50% 18%,#cd7824,#552015);--poster-accent:#fcb742}
+.cinema-shell .poster-card[data-theme="romance"]{--poster-scene:radial-gradient(circle at 50% 20%,#b63878,#3a0d35);--poster-accent:#ff78bd}
+.cinema-shell .poster-card[data-theme="scifi"]{--poster-scene:radial-gradient(circle at 50% 20%,#2b4fac,#100a38);--poster-accent:#42deff}
+.cinema-shell .poster-card[data-theme="fantasy"]{--poster-scene:radial-gradient(circle at 50% 20%,#697b45,#122016);--poster-accent:#e5bb64}
+.cinema-shell .poster-card[data-theme="action"]{--poster-scene:radial-gradient(circle at 50% 20%,#a74b17,#30100a);--poster-accent:#ff7034}
+.cinema-shell .room-view{max-width:1450px;padding:2.5rem clamp(20px,5vw,75px) 10rem;}
+.cinema-shell .room-header-top{border-bottom:1px solid color-mix(in srgb,var(--scene-accent) 55%,transparent);padding-bottom:1rem;}
+.cinema-shell .marquee-title{font-family:"Lobster",cursive;font-size:clamp(2rem,4vw,3.4rem);
+  color:#ffe5cf;text-shadow:0 3px 0 var(--scene-secondary),0 0 20px var(--scene-accent);}
+.cinema-shell .theme-chip{border-color:var(--scene-accent);background:#0b080dc9;color:#fff}
+.cinema-shell .theme-chip.active{background:var(--scene-accent);color:#10050a}
+.cinema-shell .room-grid{grid-template-columns:minmax(0,1.9fr) minmax(290px,.85fr);align-items:start;gap:1.25rem;}
+.cinema-shell .room-grid .watch-player{grid-column:1;grid-row:1}
+.cinema-shell .room-grid .chat-panel{grid-column:2;grid-row:1 / span 2;min-height:460px;}
+.cinema-shell .room-grid .video-panel{grid-column:1;grid-row:2}
+.cinema-shell .watch-player,.cinema-shell .video-panel,.cinema-shell .chat-panel{
+  background:linear-gradient(150deg,color-mix(in srgb,var(--scene) 85%,#050309),#090508ed);
+  border:1px solid color-mix(in srgb,var(--scene-accent) 55%,#211217);
+  box-shadow:0 0 20px #000b,0 0 16px color-mix(in srgb,var(--scene-accent) 14%,transparent);
+  backdrop-filter:blur(10px);
+}
+.cinema-shell .watch-frame{border:3px solid var(--scene-accent);box-shadow:0 0 20px color-mix(in srgb,var(--scene-accent) 50%,transparent);}
+.cinema-shell .chat-panel{display:flex;flex-direction:column;}
+.cinema-shell .chat-log{max-height:460px;flex:1;}
+.cinema-shell .page{background:#090509d9;border:1px solid var(--scene-accent);border-radius:14px;margin-top:4rem;max-width:1000px;}
+@media(max-width:850px) {
+  .cinema-shell .room-grid{grid-template-columns:1fr;}
+  .cinema-shell .room-grid .watch-player,.cinema-shell .room-grid .video-panel,.cinema-shell .room-grid .chat-panel{grid-column:1;grid-row:auto;}
+  .cinema-shell .hero-screen{min-height:310px;}
+  .cinema-shell .home-page{padding-top:2rem;}
+  .cinema-shell .popcorn-reel-art{width:110px;left:-12px;bottom:-20px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .cinema-shell .poster-card,.cinema-shell .ticket-button{transition:none;}
+}
