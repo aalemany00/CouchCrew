@@ -16,6 +16,7 @@ export default function CinemaScenery({ theme = "classic" }) {
     <div className="cinema-scenery" aria-hidden="true">
       <div className="scene-top" />
       <div className="scene-lights" />
+      <div className="scene-architecture" />
       <div className="scene-curtain left" />
       <div className="scene-curtain right" />
       <div className="scene-props">
