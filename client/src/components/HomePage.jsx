@@ -34,19 +34,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
             <PopcornAndReel />
           </div>
 
-          {/* A preview, not a real chat — nobody's in a room yet on this
-              page. Matches the mockup's own empty state. */}
-          <div className="hero-chat-preview" aria-hidden="true">
-            <h2>Chat</h2>
-            <div className="hero-chat-empty">
-              <span className="chat-bubble-icon">💬</span>
-              <p>Start chatting with your crew!</p>
-            </div>
-            <div className="hero-chat-input">
-              <span>Type a message...</span>
-              <span className="send-icon">➤</span>
-            </div>
-          </div>
+
         </div>
       </div>
 
