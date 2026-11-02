@@ -2,6 +2,7 @@ import { THEMES } from "../lib/theater";
 import { generateRoomCode } from "../lib/roomCode";
 import { navigate } from "../lib/router";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
+import PixelTheaterScenery from "./PixelTheaterScenery";
 
 export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
   function createRoom() {
@@ -31,7 +32,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
                 </button>
               </div>
             </div>
-            <PopcornAndReel />
+            {(!pendingTheme || pendingTheme === "classic") && <PopcornAndReel />}
           </div>
         </div>
       </div>
@@ -54,7 +55,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
               data-theme={t.id}
               onClick={() => onSelectTheme(pendingTheme === t.id ? null : t.id)}
             >
-              <span className="poster-icon">{t.icon}</span>
+              <span className="pixel-poster-art"><PixelTheaterScenery theme={t.id} mode="poster" /></span>
               <span className="poster-label">{t.label}</span>
               <span className="poster-tagline">{t.tagline}</span>
             </button>
