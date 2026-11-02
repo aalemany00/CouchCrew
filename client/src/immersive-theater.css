@@ -130,3 +130,84 @@ body:has(.cinema-shell) { background:#090509; }
 @media(prefers-reduced-motion:reduce) {
   .cinema-shell .poster-card,.cinema-shell .ticket-button{transition:none;}
 }
+
+
+/* Full-width app shell overrides Vite's starter layout without altering core app. */
+#root { width:100%; max-width:none; margin:0; border:0; display:block; text-align:left; min-height:100vh; }
+.cinema-shell .nav-bar {position:relative;z-index:5;background:#0b050bdc;border-bottom:1px solid var(--scene-secondary);padding:1rem max(24px,5vw);}
+.cinema-shell .nav-logo {font-size:2rem;color:#ffe9cf;text-shadow:0 2px 0 #c4172a,0 0 14px #d8314a;}
+.cinema-shell .nav-glow-line {background:linear-gradient(90deg,transparent,var(--scene-accent),transparent)}
+.cinema-shell .scene-architecture{position:absolute;inset:0;opacity:.75;pointer-events:none;}
+.cinema-shell[data-theme="classic"] .scene-architecture{
+  background:radial-gradient(ellipse at 50% 46%,#fcab6238,transparent 45%),
+  linear-gradient(90deg,transparent 13%,#c7874a44 13.3%,transparent 14%,transparent 86%,#c7874a44 86.5%,transparent 87%);}
+.cinema-shell[data-theme="horror"] .scene-architecture{
+  background:repeating-linear-gradient(120deg,transparent 0 80px,#000a 81px 84px,transparent 85px 200px),
+  radial-gradient(circle at 75% 28%,#d43e3670 0 4%,transparent 4.4%),
+  radial-gradient(ellipse at 50% 80%,#8d8e995c,transparent 55%),
+  linear-gradient(90deg,#040304d9,transparent 15% 85%,#040304d9);}
+.cinema-shell[data-theme="horror"] .scene-architecture::before{
+  content:"";position:absolute;inset:9% 8% 18%;border:12px ridge #53333a;
+  box-shadow:inset 0 0 80px #000,0 0 50px #6c152a;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);
+}
+.cinema-shell[data-theme="thriller"] .scene-architecture{
+  background:repeating-linear-gradient(0deg,#050b13b0 0 12px,#53a8bd22 13px 16px,#01030766 17px 22px),
+  linear-gradient(90deg,transparent 19%,#88cbe533 20%,transparent 21% 79%,#88cbe533 80%,transparent 81%);
+}
+.cinema-shell[data-theme="comedy"] .scene-architecture{
+  background:radial-gradient(ellipse at 30% 10%,#ffe07972,transparent 25%),
+  radial-gradient(ellipse at 70% 10%,#ec5d8855,transparent 25%),
+  repeating-linear-gradient(90deg,transparent 0 9%,#e8a24b25 10%,transparent 11% 20%);
+}
+.cinema-shell[data-theme="romance"] .scene-architecture{
+  background:radial-gradient(circle at 25% 30%,#ffb4d375 0 3%,transparent 3.5%),
+  radial-gradient(circle at 72% 25%,#fd97c670 0 2%,transparent 2.5%),
+  radial-gradient(circle at 63% 65%,#e881af60 0 3%,transparent 3.5%),
+  radial-gradient(ellipse at 50% 50%,#ff95c43b,transparent 65%);
+}
+.cinema-shell[data-theme="romance"] .scene-architecture::before{
+  content:"";position:absolute;inset:11% 15% 16%;
+  border:13px double #f79bba88;border-radius:50% 50% 12% 12% / 40% 40% 10% 10%;
+  box-shadow:0 0 35px #e973b362,inset 0 0 30px #e973b330;
+}
+.cinema-shell[data-theme="scifi"] .scene-architecture{
+  background:radial-gradient(circle at 52% 40%,#629ddd10 0 23%,#5dd9ff99 23.5% 24%,#030725aa 25% 26%,transparent 27%),
+  radial-gradient(circle at 51% 43%,#3a69b9,transparent 27%),
+  radial-gradient(2px 2px at 25% 30%,white,transparent),
+  radial-gradient(2px 2px at 75% 25%,white,transparent),
+  repeating-linear-gradient(90deg,transparent 0 13%,#79d8ff3b 13.1%,transparent 13.6%);}
+.cinema-shell[data-theme="scifi"] .scene-architecture::before{
+  content:"";position:absolute;inset:15% 9% 18%;border:12px solid #26648b77;
+  clip-path:polygon(5% 0,95% 0,100% 10%,100% 90%,95% 100%,5% 100%,0 90%,0 10%);
+  box-shadow:inset 0 0 60px #6ddfff55;
+}
+.cinema-shell[data-theme="fantasy"] .scene-architecture{
+  background:repeating-linear-gradient(0deg,transparent 0 46px,#f3c7881b 47px 49px,transparent 50px 99px),
+  repeating-linear-gradient(90deg,transparent 0 130px,#f3c78816 131px 133px,transparent 134px 260px),
+  radial-gradient(ellipse at 50% 35%,#d6a94838,transparent 55%);
+}
+.cinema-shell[data-theme="fantasy"] .scene-architecture::before{
+  content:"";position:absolute;inset:12% 15% 12%;border:19px ridge #a08e5b88;
+  border-radius:48% 48% 5% 5% / 40% 40% 2% 2%;
+  box-shadow:inset 0 0 50px #bfa66a48,0 0 30px #000b;
+}
+.cinema-shell[data-theme="action"] .scene-architecture{
+  background:repeating-linear-gradient(130deg,transparent 0 80px,#ff7b3020 82px 88px,transparent 90px 180px),
+  repeating-linear-gradient(90deg,#05050555 0 12%,#bc662d16 12.1% 13%,transparent 13.1% 25%),
+  radial-gradient(ellipse at 50% 85%,#fa521847,transparent 50%);
+}
+.cinema-shell[data-theme="action"] .scene-architecture::before{
+  content:"";position:absolute;inset:12% 8% 14%;border:18px solid #3a3837bb;
+  border-bottom:16px repeating-linear-gradient(45deg,#f6ad27 0 12px,#080808 12px 25px);
+  box-shadow:inset 0 0 40px #f66a2740,0 0 35px #000;
+}
+.cinema-shell[data-theme="horror"] .hero-screen {background:radial-gradient(ellipse at 53% 75%,#752b35a6,transparent 62%),linear-gradient(#10060d,#240a12);}
+.cinema-shell[data-theme="romance"] .hero-screen {background:radial-gradient(ellipse at 50% 80%,#d7559380,transparent 70%),linear-gradient(#34112e,#190a1f);}
+.cinema-shell[data-theme="scifi"] .hero-screen {background:radial-gradient(circle at 50% 100%,#285cbeaa,transparent 60%),linear-gradient(#060d27,#161038);}
+.cinema-shell[data-theme="fantasy"] .hero-screen {background:radial-gradient(circle at 50% 80%,#83955b6b,transparent 60%),linear-gradient(#0e2218,#201b15);}
+.cinema-shell[data-theme="action"] .hero-screen {background:radial-gradient(circle at 50% 90%,#fa6428a8,transparent 65%),linear-gradient(#240a09,#2a1008);}
+.cinema-shell[data-theme="thriller"] .hero-screen {background:radial-gradient(circle at 50% 90%,#187a8b83,transparent 65%),linear-gradient(#04141d,#071b27);}
+.cinema-shell[data-theme="comedy"] .hero-screen {background:radial-gradient(circle at 50% 80%,#db953c9e,transparent 65%),linear-gradient(#261015,#401c0d);}
+.cinema-shell .join-screen{position:relative;background:#0b080de5;border:1px solid var(--scene-accent);border-radius:14px;box-shadow:0 0 35px #000b;}
+.cinema-shell .join-screen h1{font-family:"Lobster",cursive;font-size:3rem;color:#ffe9cf;}
+.cinema-shell button:focus-visible{outline:3px solid #fff;outline-offset:3px;}
