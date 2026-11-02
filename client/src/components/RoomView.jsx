@@ -4,7 +4,7 @@ import { THEMES, SNACKS, THEME_EASTER_EGGS } from "../lib/theater";
 import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
-import CinemaScenery from "./CinemaScenery";
+import PixelTheaterScenery from "./PixelTheaterScenery";
 
 const MARQUEE_CLICKS_TO_REVEAL = 5;
 const MARQUEE_CLICK_WINDOW_MS = 2000;
@@ -199,7 +199,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
   return (
     <div className="cinema-shell" data-theme={theme}>
-      <CinemaScenery theme={theme} />
+      <PixelTheaterScenery theme={theme} mode="room" />
       <div className="room-view" data-theme={theme}>
       {flourish && <div className={`flourish flourish-${flourish}`} aria-hidden="true" />}
       {toast && <div className="toast">{toast.text}</div>}
