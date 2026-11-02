@@ -2,10 +2,63 @@
 
 Shared log for TCSS 490 Artifact 4, per course requirement. Add an entry
 whenever something real is decided, built, or abandoned. Newest entry on top.
+Each entry opens with a one-line **TL;DR** so a key decision can be found
+without reading the whole thing (feedback from the Artifact 2/3 logs).
+
+---
+
+## 2026-11-01 — Jitsi fails for a real call: early kick, no rejoin, no long-form use
+
+**TL;DR:** Real two-person testing broke Jitsi within 15 minutes and
+couldn't rejoin the same call — a platform limitation of using meet.jit.si
+anonymously, not a CouchCrew bug. Handing the real fix (native WebRTC) to
+Henry, since it's his job's file.
+
+**Who:** Adrian, with Claude Code (research only, no code changed).
+
+**What happened:** testing PR #15 (Henry's mobile Jitsi-frame-height fix)
+with a real two-person call surfaced three problems: the call ended on its
+own in well under 15 minutes, rejoining the same room didn't restore the
+call, and even a successful session would be capped around 95 minutes —
+too short for watching a movie together, which is the actual use case.
+
+**Root cause (confirmed via web search, not guessed):** `VideoPanel.jsx`
+creates every Jitsi room anonymously — no login. Since August 2023,
+meet.jit.si (the free public server, run by 8x8) requires whoever *creates*
+a room to be authenticated (Google/GitHub/Facebook); anonymous,
+moderator-less rooms appear to get torn down early as an anti-abuse
+measure, with no persistent room to return to afterward. The ~95-minute
+cap is a separate, real limit on top of that. This is the same category of
+problem as Daily.co's hidden card requirement: a "free, no setup" option
+with a catch that only shows up under real use, not in the docs.
+
+**Decision:** not patching around Jitsi's anonymous-mode restrictions.
+Replacing it with our own peer-to-peer WebRTC call (signaled through the
+Socket.IO server we already run, no third party involved) — no login
+requirement, no arbitrary cutoff, fits the real 2-person use case directly.
+This is Job 2 / Henry's file (`VideoPanel.jsx`), so he owns the rebuild;
+PR #15 stays open, unmerged, pending that decision.
+
+**Open items:**
+- Henry to rebuild `VideoPanel.jsx` on native WebRTC.
+- PR #15's mobile-sizing fix may still be useful once there's a real
+  `<video>` element to size, but needs re-checking against the new
+  implementation rather than merged as-is against Jitsi's iframe.
+
+---
+
+**Nov 1, 2026 — progress checkpoint for Artifact 4 (course milestone, not
+the final submission).** Everything below this line is what existed as of
+the Nov 1 checkpoint; later work gets added above it as the quarter's
+convention already does (newest entry on top).
 
 ---
 
 ## 2026-10-31 — Rebuilt the Home hero to match the mockup closely
+
+**TL;DR:** Rebuilt just the Classic hero (hand-coded SVG/CSS) to match the
+one reference mockup 1:1, after the first pass only matched its structure,
+not its actual look.
 
 **Who:** Adrian, with Claude Code, on `feature/theater-hero-rebuild`.
 
@@ -50,6 +103,9 @@ overflows).
 ---
 
 ## 2026-10-31 — Home/Rooms/Themes/Settings pages, 3 more genres
+
+**TL;DR:** Built real multi-page navigation (Home/Rooms/Themes/Settings)
+and 3 more genre themes (8 total), based on a ChatGPT-generated app mockup.
 
 **Who:** Adrian, with Claude Code, on `feature/home-and-themes`.
 
@@ -98,6 +154,10 @@ picks up a joined room; full mobile-viewport pass on the new pages.
 
 ## 2026-10-31 — Retro drive-in theater look, genre themes, four easter eggs
 
+**TL;DR:** Added the drive-in theater visual shell, 5 leader-controlled
+genre themes, and 4 hidden easter eggs; fixed a real socket-reconnect bug
+that wiped a room's state on theme change.
+
 **Who:** Adrian, with Claude Code, on `feature/theater-theme`.
 
 **What we decided:** Adrian wanted the site to actually feel like a venue —
@@ -143,6 +203,10 @@ fits, nothing overflows.
 
 ## 2026-10-30 — Room leader: one person controls what's playing
 
+**TL;DR:** Added a room-leader system so one person controls video
+selection/playback instead of everyone fighting for control; leadership
+transfers manually or automatically on disconnect.
+
 **Who:** Adrian, with Claude Code, on `feature/room-leader`.
 
 **What we decided:** rather than anyone in the room being able to load a
@@ -180,6 +244,10 @@ this artifact's scope.
 
 ## 2026-10-30 — "Find on YouTube" popup instead of a search API
 
+**TL;DR:** Added an in-room "Find on YouTube" popup instead of an
+API-based search, avoiding a Google Cloud billing account just to enable
+the YouTube Data API.
+
 **Who:** Adrian, with Claude Code, on `feature/youtube-finder`.
 
 **What we decided:** we wanted to browse/search YouTube without leaving the
@@ -204,6 +272,11 @@ non-human click — real clicks aren't affected).
 ---
 
 ## 2026-10-30 — Switched Job 2 from Daily.co to Jitsi Meet
+
+**TL;DR:** Replaced Daily.co with Jitsi Meet's public server after Daily's
+"free tier" turned out to still require a credit card on the account.
+(Later superseded — see the 2026-11-01 entry above: Jitsi has its own
+hidden catch for anonymous use.)
 
 **Who:** Adrian, with Claude Code, on `feature/jitsi-switch`.
 
@@ -237,6 +310,9 @@ work isn't wasted as a learning exercise, but it's not what's live.
 
 ## 2026-10-30 — Chat history + join/leave messages (Job 1)
 
+**TL;DR:** Added persistent chat history (last 50 messages) and
+join/leave system messages, so joining mid-conversation isn't a blank panel.
+
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
 
 **What we built:**
@@ -256,6 +332,10 @@ first tab and presence dropping correctly.
 ---
 
 ## 2026-10-30 — Merge resolution: Henry's Daily implementation wins
+
+**TL;DR:** Henry and Adrian independently built the same `/daily/room`
+endpoint on separate branches; kept Henry's version since it handled a
+race condition Adrian's didn't.
 
 **Who:** Adrian, with Claude Code, resolving `feature/video-av` into `main`.
 
@@ -282,6 +362,10 @@ in an actual video call.
 ---
 
 ## 2026-10-30 — Job 3: synced YouTube playback + cross-service research
+
+**TL;DR:** John built synced YouTube playback (play/pause/seek/drift
+correction) and confirmed true Netflix/Hulu sync is blocked by DRM, so
+screen share stays the fallback for anything outside YouTube.
 
 **Who:** John Nguyen (Job 3), with Claude Code (branch `feature/watch-sync`).
 
@@ -342,6 +426,10 @@ Outcome: no workable approach inside our scope. Findings:
 
 ## 2026-10-30 — Daily.co room endpoint for Job 2
 
+**TL;DR:** Built the server-side Daily.co room-provisioning endpoint so
+Henry's video job had a working API to call (later removed — see the
+Jitsi-switch entry above).
+
 **Who:** Adrian, with Claude Code, on `feature/daily-room-endpoint`.
 
 **Context:** Henry's Claude session asked how a CouchCrew `roomId` should
@@ -371,6 +459,10 @@ Henry's real API key to actually create rooms.
 
 ## 2026-10-30 — Video/screen share first pass (Job 2)
 
+**TL;DR:** Henry's first pass at video/screen share via Daily.co —
+opt-in calls, responsive tile grid, screen share (later replaced — see
+Jitsi-switch entry above, and the 2026-11-01 entry on Jitsi's own problems).
+
 **Who:** Henry, with Claude Code, on `feature/video-av`.
 
 **What we decided:**
@@ -393,6 +485,9 @@ register the route), `server/daily.js` (new), `render.yaml` (`DAILY_API_KEY`).
 ---
 
 ## 2026-10-30 — Room UX: shareable links, leave, persistence (Job 1)
+
+**TL;DR:** Added shareable room links, a leave button, and session
+persistence so refreshing mid-room doesn't drop you back to the join screen.
 
 **Who:** Adrian, with Claude Code, on `feature/rooms-chat`.
 
@@ -418,6 +513,10 @@ shouldn't require reading a code over text.
 
 ## 2026-10-30 — Deployed
 
+**TL;DR:** Deployed the backend to Render and the frontend to Vercel,
+confirmed live end-to-end — so Henry and John could build against the real
+backend instead of only localhost.
+
 **Who:** Adrian, with Claude Code.
 
 **What we did:**
@@ -442,6 +541,10 @@ shouldn't require reading a code over text.
 
 ## 2026-10-29 — Job assignment
 
+**TL;DR:** Confirmed the three-person job split — Adrian (rooms/chat),
+Henry (video), John (watch sync) — and sent `ONBOARDING.md` to both
+teammates for their own Claude Code sessions.
+
 **Who:** Adrian, with Claude Code.
 
 **What we decided:**
@@ -464,6 +567,10 @@ shouldn't require reading a code over text.
 ---
 
 ## 2026-10-29 — Scoping and scaffold
+
+**TL;DR:** Scoped CouchCrew's concept, 3-job split, and stack (React/Vite,
+Node/Socket.IO, managed WebRTC for calls, YouTube IFrame API for sync),
+and scaffolded the repo.
 
 **Who:** Adrian, with Claude Code (planning session covered Artifact 4 only).
 
