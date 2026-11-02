@@ -514,6 +514,9 @@ button.secondary.leave {
 .jitsi-container {
   width: 100%;
   aspect-ratio: 16 / 9;
+  /* The video panel is a narrow column on desktop; at 16:9 the frame was
+     ~290x165, too small for Jitsi's controls. */
+  min-height: 420px;
   border-radius: 10px;
   overflow: hidden;
   background: #0d0f16;
