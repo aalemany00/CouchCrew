@@ -454,6 +454,22 @@ endpoint still works and returns STUN only, so nothing breaks locally.
 then a repeat of the laptop + phone test. Cloudflare bills TURN traffic after
 a free allowance; we haven't confirmed the allowance size.
 
+**Update (Adrian, with Claude Code):** checked Cloudflare's own pricing
+page before merging — the free allowance is 1,000 GB/month (shared between
+TURN and their SFU product), $0.05/GB after that, no credit card required
+to start. A couple of people's calls won't come close to that, so this
+isn't the Daily.co situation again. Also tested the actual merge locally
+against current main before merging (this branch was cut before the
+Twitch/Kick/search work landed, so a stale-looking diff needed an actual
+merge test, not just a read, to confirm nothing would be lost — it merged
+clean), and read through `ice.js` and the `VideoPanel.jsx` diff: the
+Cloudflare secret stays server-side, only short-lived generated
+credentials reach the browser, and there's a 5s timeout so a slow/down
+server doesn't hang the Join call button. Merged as PR #25. Adrian has
+added the two Render env vars; waiting on Henry to repeat the laptop +
+phone test against the live site to confirm `relay:true` actually fixes
+the cross-network case.
+
 **Also reported, not ours:** the shared YouTube video is slightly out of sync
 between the two devices. That is the watch-sync player (Job 3, John).
 
