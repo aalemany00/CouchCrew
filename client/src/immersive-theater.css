@@ -107,14 +107,23 @@ body:has(.cinema-shell) { background:#090509; }
 .cinema-shell .theme-chip{border-color:var(--scene-accent);background:#0b080dc9;color:#fff}
 .cinema-shell .theme-chip.active{background:var(--scene-accent);color:#10050a}
 .cinema-shell .room-grid{grid-template-columns:minmax(0,1.9fr) minmax(290px,.85fr);align-items:start;gap:1.25rem;}
-.cinema-shell .room-grid .watch-player{grid-column:1;grid-row:1}
-.cinema-shell .room-grid .chat-panel{grid-column:2;grid-row:1 / span 2;min-height:460px;}
-.cinema-shell .room-grid .video-panel{grid-column:1;grid-row:2}
-.cinema-shell .watch-player,.cinema-shell .video-panel,.cinema-shell .chat-panel{
+.cinema-shell .room-grid .screen-stack{grid-column:1;grid-row:1}
+.cinema-shell .room-grid .chat-panel{grid-column:2;grid-row:1;}
+.cinema-shell .screen-stack,.cinema-shell .chat-panel{
   background:linear-gradient(150deg,color-mix(in srgb,var(--scene) 85%,#050309),#090508ed);
   border:1px solid color-mix(in srgb,var(--scene-accent) 55%,#211217);
   box-shadow:0 0 20px #000b,0 0 16px color-mix(in srgb,var(--scene-accent) 14%,transparent);
   backdrop-filter:blur(10px);
+}
+/* Watch Together + Video & Screen Share read as one screen, not two boxes -
+   flatten their own borders/backgrounds and use a divider between them.
+   Henry's WebRTC rebuild of VideoPanel can drop in here unchanged. */
+.cinema-shell .screen-stack .watch-player,.cinema-shell .screen-stack .video-panel{
+  background:transparent;border:0;box-shadow:none;backdrop-filter:none;
+}
+.cinema-shell .screen-stack .video-panel{
+  border-top:1px solid color-mix(in srgb,var(--scene-accent) 40%,transparent);
+  margin-top:1rem;padding-top:1rem;
 }
 .cinema-shell .watch-frame{border:3px solid var(--scene-accent);box-shadow:0 0 20px color-mix(in srgb,var(--scene-accent) 50%,transparent);}
 .cinema-shell .chat-panel{display:flex;flex-direction:column;}
@@ -122,7 +131,7 @@ body:has(.cinema-shell) { background:#090509; }
 .cinema-shell .page{background:#090509d9;border:1px solid var(--scene-accent);border-radius:14px;margin-top:4rem;max-width:1000px;}
 @media(max-width:850px) {
   .cinema-shell .room-grid{grid-template-columns:1fr;}
-  .cinema-shell .room-grid .watch-player,.cinema-shell .room-grid .video-panel,.cinema-shell .room-grid .chat-panel{grid-column:1;grid-row:auto;}
+  .cinema-shell .room-grid .screen-stack,.cinema-shell .room-grid .chat-panel{grid-column:1;grid-row:auto;}
   .cinema-shell .hero-screen{min-height:310px;}
   .cinema-shell .home-page{padding-top:2rem;}
   .cinema-shell .popcorn-reel-art{width:110px;left:-12px;bottom:-20px;}
@@ -354,13 +363,22 @@ body:has(.cinema-shell) { background:#090509; }
   grid-template-columns:minmax(0,2.3fr) minmax(270px,.85fr);
   gap:1rem;align-items:start;
 }
-.cinema-shell .room-grid .watch-player{grid-column:1;grid-row:1;}
-.cinema-shell .room-grid .chat-panel{grid-column:2;grid-row:1 / span 2;min-height:520px;}
-.cinema-shell .room-grid .video-panel{grid-column:1;grid-row:2;}
-.cinema-shell .watch-player,.cinema-shell .chat-panel,.cinema-shell .video-panel{
+.cinema-shell .room-grid .screen-stack{grid-column:1;grid-row:1;}
+.cinema-shell .room-grid .chat-panel{grid-column:2;grid-row:1;min-height:520px;}
+.cinema-shell .screen-stack,.cinema-shell .chat-panel{
   border-radius:3px;border:4px solid var(--scene-accent);
   background:#0f0916f0;
   box-shadow:inset 0 0 0 3px #271622, 0 7px #07040a,0 0 19px color-mix(in srgb,var(--scene-accent) 50%,transparent);
+}
+/* One screen, not two stacked boxes - see the matching rule earlier in this
+   file for why (Watch Together + Video & Screen Share grouped together). */
+.cinema-shell .screen-stack{padding:1rem;}
+.cinema-shell .screen-stack .watch-player,.cinema-shell .screen-stack .video-panel{
+  border-radius:0;border:0;background:transparent;box-shadow:none;padding:0;
+}
+.cinema-shell .screen-stack .video-panel{
+  border-top:2px solid color-mix(in srgb,var(--scene-accent) 40%,transparent);
+  margin-top:1rem;padding-top:1rem;
 }
 .cinema-shell .watch-frame{
   border:6px solid #211522;outline:3px solid var(--scene-accent);
@@ -373,7 +391,7 @@ body:has(.cinema-shell) { background:#090509; }
 .cinema-shell .join-screen{margin:10vh auto;border:5px solid var(--scene-accent);box-shadow:0 0 30px var(--scene-accent);}
 @media(max-width:900px){
  .cinema-shell .room-grid{grid-template-columns:1fr;}
- .cinema-shell .room-grid .watch-player,.cinema-shell .room-grid .chat-panel,.cinema-shell .room-grid .video-panel{grid-column:1;grid-row:auto;}
+ .cinema-shell .room-grid .screen-stack,.cinema-shell .room-grid .chat-panel{grid-column:1;grid-row:auto;}
  .cinema-shell .home-page{padding:1.2rem 1.3rem 7rem}
  .cinema-shell .theater-hero{padding:1.3rem .5rem}
  .cinema-shell .hero-screen{outline:3px solid var(--scene-accent);border-width:8px;box-shadow:0 0 0 9px #0b0711,0 0 0 12px var(--scene-accent),0 0 22px var(--scene-accent)}
