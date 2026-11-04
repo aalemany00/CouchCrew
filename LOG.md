@@ -5,6 +5,24 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — "Sign in to confirm you're not a bot" on YouTube embeds: not our bug
+
+**Who:** Adrian, with Claude Code (no code change — a note for later).
+
+**What happened:** loading a YouTube video in the room showed YouTube's
+own "Sign in to confirm you're not a bot" interstitial inside the player.
+Confirmed it's YouTube's anti-bot check, not a CouchCrew issue: our embed
+config is a normal `playsinline`/`rel:0` setup, nothing restrictive. Likely
+triggers are a VPN's IP reputation, browser privacy settings blocking the
+iframe's cross-site cookie access to a YouTube session, or repeated
+automated loads of the same video (which is also exactly what testing
+this session's Twitch/Kick work did to one video). **Confirmed the actual
+fix: turning off the VPN resolved it immediately.** Noting this so a
+future "YouTube won't play" report isn't mistaken for a real bug before
+checking VPN/network first.
+
+---
+
 ## 2026-11-04 — Search for Twitch/Kick; ruled out Netflix/Hulu/Prime/Disney+/Tubi
 
 **Who:** Adrian, with Claude Code. Touches John's file (`WatchPlayer.jsx`,
