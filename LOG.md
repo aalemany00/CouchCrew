@@ -281,6 +281,32 @@ non-human click — real clicks aren't affected).
 
 ---
 
+## 2026-11-04 — First cross-network test fails: add a TURN relay (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/turn-relay`.
+
+**What happened:** after the peer-to-peer call merged, Henry tested solo with a
+laptop on one network and a phone on another. Each device saw its own camera
+but not the other; the tile said "can't connect". That is the risk logged
+above: with only public STUN servers, two devices on different networks
+(home Wi-Fi vs cellular) usually can't reach each other directly.
+
+**Fix:** a TURN relay. New `GET /ice` on the server (`server/ice.js`) mints
+short-lived Cloudflare Realtime TURN credentials and returns them with STUN;
+`VideoPanel.jsx` fetches them when you press Join call (falls back to STUN if
+the server is unreachable). The key lives only in Render env vars
+(`CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN`). Without them the
+endpoint still works and returns STUN only, so nothing breaks locally.
+
+**Not yet verified:** needs a Cloudflare TURN key created and added on Render,
+then a repeat of the laptop + phone test. Cloudflare bills TURN traffic after
+a free allowance; we haven't confirmed the allowance size.
+
+**Also reported, not ours:** the shared YouTube video is slightly out of sync
+between the two devices. That is the watch-sync player (Job 3, John).
+
+---
+
 ## 2026-11-04 — Replaced Jitsi with our own peer-to-peer call (Job 2)
 
 **Who:** Henry, with Claude Code, on `feature/video-av`. Decided by Adrian.

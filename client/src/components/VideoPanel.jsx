@@ -7,19 +7,30 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 
-// STUN lets browsers find their public address, which works for most home
-// networks. Some networks (campus, carrier) also need a TURN relay: set
-// VITE_ICE_SERVERS to a JSON array of RTCIceServer objects to add one.
-const DEFAULT_ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }];
-function loadIceServers() {
+// Browsers behind different networks usually need a TURN relay to reach each
+// other. The server hands out short-lived relay credentials (GET /ice); if
+// that fails we fall back to public STUN, which only works on friendly
+// networks. VITE_ICE_SERVERS (a JSON array of RTCIceServer objects) overrides
+// both, for testing.
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const FALLBACK_ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }];
+
+async function loadIceServers() {
   try {
-    const parsed = JSON.parse(import.meta.env.VITE_ICE_SERVERS || "null");
-    return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_ICE;
+    const override = JSON.parse(import.meta.env.VITE_ICE_SERVERS || "null");
+    if (Array.isArray(override) && override.length) return override;
   } catch {
-    return DEFAULT_ICE;
+    // ignore a malformed override
   }
+  try {
+    const res = await fetch(`${SERVER_URL}/ice`, { signal: AbortSignal.timeout(5000) });
+    const body = await res.json();
+    if (Array.isArray(body.iceServers) && body.iceServers.length) return body.iceServers;
+  } catch {
+    // server unreachable or slow: use the fallback
+  }
+  return FALLBACK_ICE;
 }
-const ICE_SERVERS = loadIceServers();
 
 // Gets mic and/or camera, degrading gracefully: returns whatever tracks it
 // could get plus a note for anything that was refused or missing.
@@ -190,7 +201,7 @@ export default function VideoPanel({ roomId }) {
   function createPeer(id, name) {
     const call = callRef.current;
     closePeer(id);
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({ iceServers: call.iceServers });
     const peer = {
       id,
       name,
@@ -342,7 +353,10 @@ export default function VideoPanel({ roomId }) {
       return;
     }
     setStatus("joining");
-    const { tracks, notes } = await getLocalTracks(startMic, startCam);
+    const [iceServers, { tracks, notes }] = await Promise.all([
+      loadIceServers(),
+      getLocalTracks(startMic, startCam),
+    ]);
     if (!mountedRef.current) {
       tracks.forEach((t) => t.stop());
       return;
@@ -350,6 +364,7 @@ export default function VideoPanel({ roomId }) {
     if (notes.length) setNotice(notes[0]);
 
     const call = {
+      iceServers,
       localStream: new MediaStream(tracks),
       screenStream: null,
       peers: new Map(),
