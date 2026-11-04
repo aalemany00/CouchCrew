@@ -41,6 +41,10 @@ const roomLeaders = new Map();
 // roomId -> genre theme string. Leader-controlled, like the sync-event
 // controls; "classic" (the base drive-in look) until the leader changes it.
 const roomThemes = new Map();
+// roomId -> Set<socketId> of people currently in the video call. Our server
+// only passes WebRTC setup messages between them (signaling); the audio/video
+// itself flows directly between browsers.
+const roomCalls = new Map();
 const VALID_THEMES = new Set([
   "classic",
   "horror",
@@ -76,6 +80,13 @@ function addMessage(roomId, message) {
 
 io.on("connection", (socket) => {
   let joinedRoomId = null;
+
+  function leaveCall(roomId) {
+    const call = roomCalls.get(roomId);
+    if (!call?.delete(socket.id)) return;
+    if (call.size === 0) roomCalls.delete(roomId);
+    socket.to(roomId).emit("call:peer-left", { id: socket.id });
+  }
 
   socket.on("room:join", ({ roomId, name }) => {
     joinedRoomId = roomId;
@@ -141,7 +152,33 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room:presence", roomState(roomId));
   });
 
+  // Join the room's video call: the joiner gets the list of people already in
+  // it and starts a connection to each; they are told about the joiner.
+  socket.on("call:join", ({ roomId }) => {
+    const member = rooms.get(roomId)?.get(socket.id);
+    if (!member) return;
+    if (!roomCalls.has(roomId)) roomCalls.set(roomId, new Set());
+    const call = roomCalls.get(roomId);
+    const peers = Array.from(call)
+      .filter((id) => id !== socket.id)
+      .map((id) => ({ id, name: rooms.get(roomId)?.get(id)?.name || "Guest" }));
+    call.add(socket.id);
+    socket.emit("call:peers", { peers });
+    socket.to(roomId).emit("call:peer-joined", { id: socket.id, name: member.name });
+  });
+
+  socket.on("call:leave", ({ roomId }) => leaveCall(roomId));
+
+  // Relays one WebRTC signaling message (offer/answer/ICE candidate or a small
+  // state update) to a single other person who is in the same call.
+  socket.on("rtc:signal", ({ roomId, to, data }) => {
+    const call = roomCalls.get(roomId);
+    if (!call?.has(socket.id) || !call.has(to) || !data) return;
+    io.to(to).emit("rtc:signal", { from: socket.id, data });
+  });
+
   socket.on("disconnect", () => {
+    if (joinedRoomId) leaveCall(joinedRoomId);
     if (!joinedRoomId) return;
     const members = rooms.get(joinedRoomId);
     const leavingName = members?.get(socket.id)?.name || "Someone";
