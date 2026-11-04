@@ -26,22 +26,29 @@ import { socket } from "../lib/socket";
 const LIVE_PROVIDERS = {
   twitch: {
     label: "Twitch",
-    placeholder: "Twitch channel name (e.g. shroud)",
+    placeholder: "Twitch channel name, or type a search and find it →",
     parseChannel: (input) => {
       const text = input.trim().replace(/^https?:\/\/(www\.)?twitch\.tv\//i, "");
       return /^[a-zA-Z0-9_]{1,25}$/.test(text) ? text.toLowerCase() : null;
     },
     embedUrl: (channel) =>
       `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=${window.location.hostname}&muted=false`,
+    // Twitch's own site can't be embedded for browsing (same reason as
+    // YouTube), so this opens a popup to search there instead - no API
+    // key/developer account needed, same pattern as the YouTube finder.
+    searchUrl: (query) => `https://www.twitch.tv/search?term=${encodeURIComponent(query)}`,
+    homeUrl: "https://www.twitch.tv/directory",
   },
   kick: {
     label: "Kick",
-    placeholder: "Kick username (e.g. xqc)",
+    placeholder: "Kick username, or type a search and find it →",
     parseChannel: (input) => {
       const text = input.trim().replace(/^https?:\/\/(www\.)?kick\.com\//i, "");
       return /^[a-zA-Z0-9_]{1,25}$/.test(text) ? text.toLowerCase() : null;
     },
     embedUrl: (channel) => `https://player.kick.com/${encodeURIComponent(channel)}`,
+    searchUrl: (query) => `https://kick.com/search?query=${encodeURIComponent(query)}`,
+    homeUrl: "https://kick.com",
   },
 };
 
@@ -386,9 +393,9 @@ export default function WatchPlayer({ roomId, isLeader }) {
     setError("");
   }
 
-  // YouTube's own site can't be embedded in the room (they block framing for
-  // browsing), so this opens a small popup alongside the room instead of a
-  // full tab-switch — search there, copy the link, paste it in below.
+  // None of these services' own sites can be embedded in the room for
+  // browsing, so this opens a small popup alongside the room instead of a
+  // full tab-switch — search there, copy the channel/link, paste it below.
   function openYouTubeFinder() {
     const typed = url.trim();
     const target =
@@ -396,6 +403,12 @@ export default function WatchPlayer({ roomId, isLeader }) {
         ? `https://www.youtube.com/results?search_query=${encodeURIComponent(typed)}`
         : "https://www.youtube.com";
     window.open(target, "couchcrew-youtube-finder", "width=480,height=760,noopener,noreferrer");
+  }
+
+  function openLiveFinder() {
+    const typed = url.trim();
+    const target = typed ? liveConfig.searchUrl(typed) : liveConfig.homeUrl;
+    window.open(target, `couchcrew-${provider}-finder`, "width=480,height=760,noopener,noreferrer");
   }
 
   const liveConfig = provider !== "youtube" ? LIVE_PROVIDERS[provider] : null;
@@ -437,9 +450,13 @@ export default function WatchPlayer({ roomId, isLeader }) {
             />
             <button type="submit">Load</button>
           </form>
-          {provider === "youtube" && (
+          {provider === "youtube" ? (
             <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
               Find on YouTube ↗
+            </button>
+          ) : (
+            <button type="button" className="secondary youtube-finder" onClick={openLiveFinder}>
+              Find on {liveConfig.label} ↗
             </button>
           )}
         </>
