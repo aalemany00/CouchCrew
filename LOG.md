@@ -281,6 +281,80 @@ non-human click — real clicks aren't affected).
 
 ---
 
+## 2026-11-04 — Replaced Jitsi with our own peer-to-peer call (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/video-av`. Decided by Adrian.
+
+**Why:** the Jitsi embed on `meet.jit.si` kept dropping us: calls ended early,
+we couldn't rejoin, and anonymous rooms weren't real rooms. Meet.jit.si has
+required a signed-in moderator since Aug 2023, so a sign-in would only fix it
+for whoever created the room. Daily (earlier) needed a card. So: no third party.
+
+**What we built:** a WebRTC call where each person connects directly to each
+other person (mesh — fine for a handful of people). Mic, camera and screen
+share all work; leaving and rejoining works; people with no camera/mic can
+join as viewers.
+- `server/index.js`: new `call:join` / `call:leave` / `rtc:signal` events. The
+  server only relays setup messages between people in the same call; no media
+  passes through it. (Outside Job 2's files — flagged for review.)
+- `VideoPanel.jsx`: rewritten. Uses "perfect negotiation" so two people
+  changing something at once (e.g. both start sharing) don't deadlock. Camera
+  off really stops the camera. Each tile shows "connecting…" or "can't
+  connect" so a failure is visible, not silent.
+
+**Tested:** two browser tabs against a local server, with a fake camera/mic
+(the testing browser blocks real ones): connect, audio + video flowing, rejoin,
+both sharing a screen at once, camera off/on, mute indicator, stop sharing. This
+caught a bug where renegotiation hung (the person who joined re-attached their
+media on the first incoming offer and threw); fixed.
+
+**Not yet verified / known risk:**
+- A call between real devices, and on a phone. Phone browsers generally can't
+  screen share.
+- Only free public STUN servers are configured. Some networks (campus, phone
+  carriers) block direct connections and need a TURN relay; those people will
+  see "can't connect". A relay can be added with `VITE_ICE_SERVERS` (JSON) once
+  we pick a free one. Mesh also gets heavy past ~4-5 people.
+
+---
+
+## 2026-11-01 — Job 2 follow-up after the Jitsi switch (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/video-av`.
+
+**What happened:** my Daily.co version (custom tile grid, `/daily/room`
+endpoint) merged, then was replaced by Adrian's Jitsi embed after Daily's
+free tier turned out to need a card on file. Re-synced `feature/video-av`
+with `main`; nothing of the Daily code remains, which is the intended state.
+
+**What changed:** on phones (<=640px) the Jitsi frame is now ~70vh tall
+instead of 16:9, which is only ~210px on a 375px-wide screen.
+
+**Live-site check (Henry, browser pane):** created a room on
+couch-crew.vercel.app, pressed Join call; the Jitsi iframe loaded from
+meet.jit.si with camera/microphone/display-capture permissions granted. The
+frame was only ~290x165px in the desktop video column, so added
+`min-height: 420px`. The testing browser blocks camera access, so no actual
+call was possible there.
+
+**Real test (all three of us, own devices):** the Jitsi call works, with
+Adrian, Henry and John each in a tile. The shared YouTube player did not:
+YouTube showed "Sign in to confirm you're not a bot", so nothing played.
+Open question for Job 3 / integration: whether that's YouTube distrusting
+the embed (and whether anything we control fixes it) — not yet investigated.
+
+**Follow-up:** sometimes video/voice isn't shared between us. Cause unknown
+(different Jitsi rooms, muted/blocked devices, NAT/firewall, or public-server
+limits are the candidates). Added a diagnostic under the call frame: live
+participant count, the Jitsi room name, and a log of join/leave/mute/error
+events, to be read on the next test.
+
+**Still not verified:** screen share, and mic /
+camera on an actual phone browser. Note: mobile browsers generally can't
+screen share at all, so on phones the Jitsi share option may be absent.
+
+---
+
 ## 2026-10-30 — Switched Job 2 from Daily.co to Jitsi Meet
 
 **Who:** Adrian, with Claude Code, on `feature/jitsi-switch`.
