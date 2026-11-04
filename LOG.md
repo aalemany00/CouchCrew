@@ -5,6 +5,57 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — Real in-app YouTube search (corrects an earlier decision)
+
+**Who:** Adrian, with Claude Code. Touches John's file again (`WatchPlayer.jsx`).
+
+**What happened:** Adrian wanted picking a video from the "Find on
+YouTube" popup to automatically load it and close the popup, instead of
+copy/pasting the link back manually. Looked into it: once that popup
+navigates to youtube.com, our page can no longer read its URL at all —
+same-origin policy, a hard browser security boundary, not something
+fixable in our code. There's no way to "detect the click" from outside.
+
+**This corrects the Oct 30 decision** ("Find on YouTube" popup instead of
+a search API): that entry assumed the YouTube Data API needs a Google
+Cloud billing account. Re-checked against Google's own getting-started
+docs before building anything (same habit as the Daily.co/Jitsi
+research) — enabling the YouTube Data API v3 and creating an API key does
+**not** require billing, only an API key under Credentials. Confirmed by
+testing: a placeholder key returned Google's own `"API key not valid.
+Please pass a valid API key."` error, proving the request reaches Google's
+real endpoint and will work with a real key, which needs to come from
+Adrian's own Google account (not something this session can generate).
+
+**What we built:** real in-app search behind an optional
+`VITE_YOUTUBE_API_KEY` env var (see `.env.example`). With a key set, the
+Load button becomes Search for anything that isn't already a video
+link/ID, and results render as clickable thumbnails right in the room —
+click one and it loads immediately via the exact same `loadYouTubeVideo`
+path "Load" already used, no popup involved. Without a key configured
+(e.g. Henry's or John's local setup, or until Adrian adds his own), the
+button stays "Load", the old error message is unchanged, and the "Find on
+YouTube" popup is still there — the feature degrades to exactly today's
+behavior rather than breaking for anyone without a key.
+
+**Verified:** tested both code paths — no-key fallback behaves identically
+to before (same button label, same error text), and the key-present path
+sends a real request to Google's API and surfaces its real error.
+Quota: 100 units per search, 10,000/day default — about 100 searches/day,
+fine for this group.
+
+**Open items:**
+- Adrian needs to create his own free API key (console.cloud.google.com →
+  enable "YouTube Data API v3" → Credentials → Create API Key) and add it
+  to `client/.env` locally, plus Vercel's environment variables for the
+  deployed site, to actually turn this on.
+- Once deployed, restrict the key to the YouTube Data API v3 and to the
+  real domain(s) (an HTTP referrer restriction) so it isn't usable if
+  leaked from the client bundle — it's client-side code, so the key is
+  visible to anyone who looks, same as any client-side API key.
+
+---
+
 ## 2026-11-04 — "Sign in to confirm you're not a bot" on YouTube embeds: not our bug
 
 **Who:** Adrian, with Claude Code (no code change — a note for later).

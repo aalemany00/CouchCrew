@@ -699,6 +699,58 @@ button.secondary.leave {
   color: #ff7a7a;
 }
 
+.youtube-search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.youtube-search-results li + li {
+  border-top: 1px solid var(--panel-border);
+}
+
+.youtube-search-results button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+  border-radius: 0;
+  text-align: left;
+  color: inherit;
+  font-weight: 400;
+}
+
+.youtube-search-results button:hover {
+  background: var(--accent-soft);
+}
+
+.youtube-search-results img {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.youtube-search-results .result-title {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.youtube-search-results .result-channel {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+}
+
 .watch-frame.locked iframe {
   pointer-events: none;
 }

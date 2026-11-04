@@ -52,6 +52,34 @@ const LIVE_PROVIDERS = {
   },
 };
 
+// Real in-app search via the YouTube Data API (free, no card - a project
+// just needs the API enabled and a key under Credentials; see .env.example).
+// Optional: if no key is configured, the "Find on YouTube" popup below is
+// still there as a fallback, so this never breaks for someone without one.
+const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+async function searchYouTubeVideos(query) {
+  const params = new URLSearchParams({
+    part: "snippet",
+    type: "video",
+    maxResults: "8",
+    q: query,
+    key: YOUTUBE_API_KEY,
+  });
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message || `YouTube search failed (${res.status})`);
+  }
+  const data = await res.json();
+  return (data.items || []).map((item) => ({
+    videoId: item.id.videoId,
+    title: item.snippet.title,
+    channel: item.snippet.channelTitle,
+    thumbnail: item.snippet.thumbnails?.default?.url,
+  }));
+}
+
 const DRIFT_THRESHOLD = 2; // seconds of drift before a tick corrects a viewer
 const SEEK_THRESHOLD = 1.5; // a jump bigger than this between polls is a seek
 const SUPPRESS_MS = 1000; // ignore player events caused by applying a remote one
@@ -101,6 +129,8 @@ function parseVideoId(input) {
 export default function WatchPlayer({ roomId, isLeader }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [provider, setProvider] = useState("youtube"); // "youtube" | "twitch" | "kick"
   const [liveChannel, setLiveChannel] = useState(null);
@@ -352,7 +382,17 @@ export default function WatchPlayer({ roomId, isLeader }) {
     };
   }, [currentState, send]);
 
-  function handleLoad(e) {
+  function loadYouTubeVideo(videoId) {
+    setError("");
+    setUrl("");
+    setSearchResults(null);
+    const state = { videoId, time: 0, playing: true };
+    controllerRef.current = true;
+    applyState(state);
+    send({ type: "load", provider: "youtube", ...state });
+  }
+
+  async function handleLoad(e) {
     e.preventDefault();
     if (!isLeader) return;
     if (provider !== "youtube") {
@@ -360,16 +400,30 @@ export default function WatchPlayer({ roomId, isLeader }) {
       return;
     }
     const videoId = parseVideoId(url);
-    if (!videoId) {
-      setError("That doesn't look like a YouTube link.");
+    if (videoId) {
+      loadYouTubeVideo(videoId);
+      return;
+    }
+    // Not a link/ID - search in-app if a key is configured, otherwise fall
+    // back to the "Find on YouTube" popup (still available either way).
+    if (!YOUTUBE_API_KEY || !url.trim()) {
+      setError(
+        YOUTUBE_API_KEY ? "Type something to search for." : "That doesn't look like a YouTube link."
+      );
       return;
     }
     setError("");
-    setUrl("");
-    const state = { videoId, time: 0, playing: true };
-    controllerRef.current = true;
-    applyState(state);
-    send({ type: "load", provider: "youtube", ...state });
+    setSearching(true);
+    try {
+      const results = await searchYouTubeVideos(url.trim());
+      setSearchResults(results);
+      if (results.length === 0) setError("No results — try a different search.");
+    } catch (err) {
+      setError(err.message || "Search failed.");
+      setSearchResults(null);
+    } finally {
+      setSearching(false);
+    }
   }
 
   // Twitch/Kick are live, so "loading" just means pointing everyone's iframe
@@ -391,6 +445,7 @@ export default function WatchPlayer({ roomId, isLeader }) {
   function switchProvider(nextProvider) {
     setProvider(nextProvider);
     setError("");
+    setSearchResults(null);
   }
 
   // None of these services' own sites can be embedded in the room for
@@ -443,13 +498,38 @@ export default function WatchPlayer({ roomId, isLeader }) {
             <input
               type="text"
               placeholder={
-                liveConfig ? liveConfig.placeholder : "Paste a YouTube link, or type a search and find it →"
+                liveConfig
+                  ? liveConfig.placeholder
+                  : YOUTUBE_API_KEY
+                    ? "Paste a YouTube link, or type a search and press Search"
+                    : "Paste a YouTube link, or type a search and find it →"
               }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
-            <button type="submit">Load</button>
+            <button type="submit" disabled={searching}>
+              {searching
+                ? "Searching…"
+                : provider === "youtube" && YOUTUBE_API_KEY && !parseVideoId(url)
+                  ? "Search"
+                  : "Load"}
+            </button>
           </form>
+          {searchResults && (
+            <ul className="youtube-search-results">
+              {searchResults.map((r) => (
+                <li key={r.videoId}>
+                  <button type="button" onClick={() => loadYouTubeVideo(r.videoId)}>
+                    {r.thumbnail && <img src={r.thumbnail} alt="" />}
+                    <span>
+                      <span className="result-title">{r.title}</span>
+                      <span className="result-channel">{r.channel}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           {provider === "youtube" ? (
             <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
               Find on YouTube ↗
