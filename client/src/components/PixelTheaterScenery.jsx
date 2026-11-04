@@ -61,7 +61,7 @@ export default function PixelTheaterScenery({theme="classic",mode="lobby"}) {
     {[0,1,2,3].map(row=><g key={row} transform={`translate(${-40+row*18} ${565+row*48})`}>
       {SEATS.map(i=><g key={i} transform={`translate(${i*87} 0)`}><rect x="2" y="10" width="78" height="58" rx="8" fill="#0d070b"/><rect x="8" y="6" width="64" height="52" rx="7" fill={p.seat}/><path d="M12 13h56v5H12z" fill={p.accent} opacity=".3"/><rect x="0" y="32" width="11" height="31" fill={p.side}/><rect x="70" y="32" width="11" height="31" fill={p.side}/></g>)}</g>)}
     <path d="M535 760 580 590H620L665 760" fill="#17121a"/>
-    {Array.from({length:8},(_,i)=><rect key={i} x={535+i*11} y={744-i*21} width={130-i*22} height="3" fill={p.glow} opacity=".9"/>)}
+    {Array.from({length:8},(_,i)=><rect key={i} x={535+i*11} y={744-i*21} width={Math.max(4,130-i*22)} height="3" fill={p.glow} opacity=".9"/>)}
     <g opacity=".95"><IconProp theme={theme} x={35} y={385} scale={2.5}/><IconProp theme={theme} x={1070} y={385} scale={2}/></g>
     {theme==="horror"&&<g>{[60,1080,240,955].map((x,i)=><g key={i}><rect x={x} y={495+i%2*25} width="7" height="40" fill="#e9d8bc"/><rect x={x-4} y={488+i%2*25} width="15" height="9" fill="#ffd481"/></g>)}</g>}
     {theme==="romance"&&<g>{[70,1090,255,940].map((x,i)=><g key={i}><rect x={x} y={445+i%2*27} width="8" height="43" fill="#677c37"/><rect x={x-9} y={431+i%2*27} width="28" height="26" fill="#ea6197"/><rect x={x-3} y={427+i%2*27} width="17" height="15" fill="#ffd0db"/></g>)}</g>}

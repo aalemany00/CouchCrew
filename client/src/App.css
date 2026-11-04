@@ -535,6 +535,28 @@ button.secondary.leave {
 }
 
 /* Watch player (Job 3) */
+.watch-provider-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.provider-tab {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.provider-tab.active {
+  background: var(--accent);
+  color: #1a1408;
+  border-color: var(--accent);
+}
+
 .watch-load {
   display: flex;
   gap: 0.5rem;
