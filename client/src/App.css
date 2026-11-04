@@ -427,18 +427,29 @@ button.secondary.leave {
   .room-grid {
     grid-template-columns: 2fr 1fr;
   }
-  .chat-panel {
-    grid-column: span 2;
-  }
 }
 
-.watch-player,
-.video-panel,
+/* Watch Together + Video & Screen Share are grouped into one .screen-stack
+   wrapper (see RoomView.jsx) so they read as one screen, not two boxes. */
+.screen-stack,
 .chat-panel {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.screen-stack .watch-player,
+.screen-stack .video-panel {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.screen-stack .video-panel {
+  border-top: 1px solid var(--panel-border);
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 .reconnecting {

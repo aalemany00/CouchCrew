@@ -285,8 +285,14 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
         )}
       </header>
       <div className="room-grid">
-        <WatchPlayer roomId={roomId} isLeader={amLeader} />
-        <VideoPanel roomId={roomId} />
+        {/* Grouped into one visual frame (see App.css .screen-stack) to read
+            as a single screen, closer to the reference mockups, without
+            touching WatchPlayer/VideoPanel's own markup — Henry's upcoming
+            WebRTC rebuild of VideoPanel can drop in here unchanged. */}
+        <div className="screen-stack">
+          <WatchPlayer roomId={roomId} isLeader={amLeader} />
+          <VideoPanel roomId={roomId} />
+        </div>
         <ChatPanel roomId={roomId} />
       </div>
     </div>

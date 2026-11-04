@@ -5,6 +5,43 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — Grouped Watch Together + Video into one screen frame
+
+**Who:** Adrian, with Claude Code, on `feature/screen-stack`.
+
+**What happened:** Henry asked whether to keep patching Jitsi or move to a
+native WebRTC rebuild; team decided on the rebuild (see 2026-11-01 entry).
+While that's in progress on his end, did the other half of the mockups'
+room-layout gap myself: the reference mockups show one big screen, but the
+app had "Watch Together" and "Video & Screen Share" as two separate
+bordered boxes stacked on top of each other.
+
+**What changed:** wrapped `<WatchPlayer>` and `<VideoPanel>` in a new
+`.screen-stack` div in `RoomView.jsx` — purely a layout wrapper, no change
+to either component's own markup or props. Moved the themed border/
+background from the individual panels onto the wrapper, flattened the two
+children's own borders, and added a divider line between them so they read
+as one screen with two sections instead of two separate boxes. Closed
+Henry's stale PR #15 (a Jitsi-specific mobile sizing fix that no longer
+applies once Jitsi is gone).
+
+**Why this doesn't block Henry:** `VideoPanel` is still rendered with the
+same `roomId` prop in the same spot; his WebRTC rebuild drops into
+`.screen-stack` without needing to know this wrapper exists.
+
+**Verified:** joined a real room locally, confirmed Watch Together and
+Video & Screen Share render as one continuous frame with a clean divider,
+Chat stays its own panel, and nothing in the chat/video/watch
+functionality changed.
+
+**Open items:**
+- The mockups' bottom icon bar (camera/mic/chat/participants/leave) still
+  needs Henry's new component to actually expose those controls before it
+  can be built for real — not done here, since guessing at an API his
+  rebuild hasn't written yet would likely need redoing.
+
+---
+
 ## 2026-11-01 — Pixel-art theater scenes for all 8 themes (ChatGPT-built, reviewed and merged)
 
 **Who:** Adrian directed ChatGPT to build this directly (not Claude Code);
