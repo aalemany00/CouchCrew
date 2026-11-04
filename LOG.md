@@ -5,6 +5,59 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — Free live-streaming providers: Twitch and Kick
+
+**Who:** Adrian, with Claude Code, on `feature/live-streaming-providers`.
+**Touches John's file (`WatchPlayer.jsx`, Job 3) — flagging for his review.**
+
+**What we decided:** Adrian wanted the room to support watching a live
+stream together, not just pre-recorded YouTube. Before building, verified
+what's actually free (given Daily.co's and Jitsi's hidden catches earlier
+in this project): Twitch's embed player (`player.twitch.tv`) needs no
+account or API key, just a `parent` domain parameter; Kick's embed
+(`player.kick.com/<username>`) needs nothing at all. Both confirmed
+against their own docs, not third-party claims.
+
+**What we built:** `WatchPlayer.jsx` now has a provider selector (YouTube /
+Twitch (live) / Kick (live)). Live providers are architecturally simpler
+than YouTube: since the content is already live, there's no play/pause/
+seek state to keep in sync — "loading" just means everyone's iframe points
+at the same channel, which rides on the existing `load`/`state`/`request`
+sync:event shapes with a `provider`/`channel` field instead of `videoId`/
+`time`/`playing`. The YouTube path (the actually delicate part — drift
+correction, conflict resolution) is completely untouched: every YouTube
+ref/handler still only runs when `provider === "youtube"`.
+
+**A real bug avoided:** switching away from YouTube only hides its iframe
+via CSS — the hidden `YT.Player` would otherwise keep playing audio in the
+background. Added an explicit `pauseVideo()` call on provider switch.
+
+**Verified for real, not just read the docs:** ran both the client and
+server locally, joined a room as leader, loaded a real Twitch channel
+(`shroud`) and a real Kick channel (`xqc`) — both rendered their actual
+embed UI (including Twitch's own "channel is offline" state, proof it's
+genuinely talking to Twitch's player, not a stub). Opened a second browser
+tab as a non-leader joiner and confirmed it received the live channel via
+the existing request/state handshake, locked (no controls). Then switched
+back to YouTube and confirmed the original sync behavior still works
+end-to-end, in both tabs.
+
+**Bonus fix:** found a real bug while testing in the browser console (not
+caused by this change) — `PixelTheaterScenery.jsx`'s decorative film-strip
+rects could compute a negative `width` for the last two of eight
+(`130 - i*22` goes to -2, -24), which React/SVG rejects. Clamped with
+`Math.max(4, ...)`.
+
+**Open items:**
+- John should review the sync-shape change (`provider`/`channel` fields)
+  since it's his file.
+- Neither Twitch nor Kick require a "parent" or auth for the public player
+  in local/dev testing; worth a quick re-check once deployed to Vercel
+  that `window.location.hostname` resolves to the real domain for Twitch's
+  `parent` param (it should, but not yet verified against the live site).
+
+---
+
 ## 2026-11-04 — Grouped Watch Together + Video into one screen frame
 
 **Who:** Adrian, with Claude Code, on `feature/screen-stack`.

@@ -5,16 +5,45 @@
 // (pointer-events: none, see .watch-frame.locked) and their load form is
 // hidden. The leader's actions broadcast through the server's generic
 // "sync:event" relay as { type, ... } objects:
-//   load   { videoId, time, playing }  - everyone switches to this video
-//   play   { time }
-//   pause  { time }
-//   seek   { time }
-//   tick   { time }                    - heartbeat from whoever last acted, to correct drift
+//   load   { provider, videoId, time, playing }  (youtube) - everyone switches to this video
+//   load   { provider, channel }                 (twitch/kick) - everyone switches to this channel
+//   play   { time }                    (youtube only)
+//   pause  { time }                    (youtube only)
+//   seek   { time }                    (youtube only)
+//   tick   { time }                    (youtube only) - heartbeat from whoever last acted, to correct drift
 //   request                            - a new joiner asking for the current state
-//   state  { videoId, time, playing }  - reply to a request
-// Non-YouTube services fall back to VideoPanel's screen share (see LOG.md).
+//   state  { provider, videoId, time, playing } or { provider, channel } - reply to a request
+//
+// Twitch and Kick are live, so there's no play/pause/seek to keep in sync -
+// everyone's iframe just points at the same channel, already the same
+// broadcast. Added 2026-11-04 (Adrian, flagged for John's review - see
+// LOG.md): kept entirely additive so the YouTube sync logic below (the
+// part that's actually delicate - drift correction, conflict resolution)
+// is untouched when provider is "youtube", which stays the default.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
+
+const LIVE_PROVIDERS = {
+  twitch: {
+    label: "Twitch",
+    placeholder: "Twitch channel name (e.g. shroud)",
+    parseChannel: (input) => {
+      const text = input.trim().replace(/^https?:\/\/(www\.)?twitch\.tv\//i, "");
+      return /^[a-zA-Z0-9_]{1,25}$/.test(text) ? text.toLowerCase() : null;
+    },
+    embedUrl: (channel) =>
+      `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=${window.location.hostname}&muted=false`,
+  },
+  kick: {
+    label: "Kick",
+    placeholder: "Kick username (e.g. xqc)",
+    parseChannel: (input) => {
+      const text = input.trim().replace(/^https?:\/\/(www\.)?kick\.com\//i, "");
+      return /^[a-zA-Z0-9_]{1,25}$/.test(text) ? text.toLowerCase() : null;
+    },
+    embedUrl: (channel) => `https://player.kick.com/${encodeURIComponent(channel)}`,
+  },
+};
 
 const DRIFT_THRESHOLD = 2; // seconds of drift before a tick corrects a viewer
 const SEEK_THRESHOLD = 1.5; // a jump bigger than this between polls is a seek
@@ -66,6 +95,23 @@ export default function WatchPlayer({ roomId, isLeader }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [hasVideo, setHasVideo] = useState(false);
+  const [provider, setProvider] = useState("youtube"); // "youtube" | "twitch" | "kick"
+  const [liveChannel, setLiveChannel] = useState(null);
+
+  const providerRef = useRef(provider);
+  useEffect(() => {
+    providerRef.current = provider;
+    // Switching to a live channel hides the YouTube container (CSS), but a
+    // video playing inside it would otherwise keep its audio running in the
+    // background - pause it explicitly.
+    if (provider !== "youtube") {
+      playerRef.current?.pauseVideo?.();
+    }
+  }, [provider]);
+  const liveChannelRef = useRef(liveChannel);
+  useEffect(() => {
+    liveChannelRef.current = liveChannel;
+  }, [liveChannel]);
 
   const containerRef = useRef(null);
   const playerRef = useRef(null);
@@ -177,9 +223,18 @@ export default function WatchPlayer({ roomId, isLeader }) {
   useEffect(() => {
     function handleSync(event) {
       const p = playerRef.current;
+      const eventProvider = event.provider || "youtube";
       switch (event.type) {
         case "load":
           waitingForStateRef.current = false;
+          if (eventProvider !== "youtube") {
+            setProvider(eventProvider);
+            setLiveChannel(event.channel);
+            setHasVideo(true);
+            break;
+          }
+          setProvider("youtube");
+          setLiveChannel(null);
           controllerRef.current = false;
           applyState(event);
           break;
@@ -187,16 +242,31 @@ export default function WatchPlayer({ roomId, isLeader }) {
           // Only the first reply matters, and only to someone who asked.
           if (!waitingForStateRef.current) break;
           waitingForStateRef.current = false;
+          if (eventProvider !== "youtube") {
+            setProvider(eventProvider);
+            setLiveChannel(event.channel);
+            setHasVideo(true);
+            break;
+          }
+          setProvider("youtube");
+          setLiveChannel(null);
           applyState(event);
           break;
         case "request": {
+          if (providerRef.current !== "youtube") {
+            if (liveChannelRef.current) {
+              send({ type: "state", provider: providerRef.current, channel: liveChannelRef.current });
+            }
+            break;
+          }
           const state = currentState();
-          if (state) send({ type: "state", ...state });
+          if (state) send({ type: "state", provider: "youtube", ...state });
           break;
         }
         case "play":
         case "pause":
         case "seek":
+          if (providerRef.current !== "youtube") break;
           if (!videoIdRef.current) break;
           // Conflict: we acted at the same moment. The lower socket id wins on
           // both sides, so everyone converges on the same state.
@@ -216,6 +286,7 @@ export default function WatchPlayer({ roomId, isLeader }) {
           });
           break;
         case "tick": {
+          if (providerRef.current !== "youtube") break;
           if (!p || !readyRef.current || !videoIdRef.current) break;
           if (Math.abs(p.getCurrentTime() - event.time) > DRIFT_THRESHOLD) {
             suppressUntilRef.current = Date.now() + SUPPRESS_MS;
@@ -277,6 +348,10 @@ export default function WatchPlayer({ roomId, isLeader }) {
   function handleLoad(e) {
     e.preventDefault();
     if (!isLeader) return;
+    if (provider !== "youtube") {
+      handleLoadLive(e);
+      return;
+    }
     const videoId = parseVideoId(url);
     if (!videoId) {
       setError("That doesn't look like a YouTube link.");
@@ -287,7 +362,28 @@ export default function WatchPlayer({ roomId, isLeader }) {
     const state = { videoId, time: 0, playing: true };
     controllerRef.current = true;
     applyState(state);
-    send({ type: "load", ...state });
+    send({ type: "load", provider: "youtube", ...state });
+  }
+
+  // Twitch/Kick are live, so "loading" just means pointing everyone's iframe
+  // at the same channel - no play/pause/seek state to keep in sync.
+  function handleLoadLive() {
+    const config = LIVE_PROVIDERS[provider];
+    const channel = config.parseChannel(url);
+    if (!channel) {
+      setError(`That doesn't look like a ${config.label} channel.`);
+      return;
+    }
+    setError("");
+    setUrl("");
+    setLiveChannel(channel);
+    setHasVideo(true);
+    send({ type: "load", provider, channel });
+  }
+
+  function switchProvider(nextProvider) {
+    setProvider(nextProvider);
+    setError("");
   }
 
   // YouTube's own site can't be embedded in the room (they block framing for
@@ -302,23 +398,50 @@ export default function WatchPlayer({ roomId, isLeader }) {
     window.open(target, "couchcrew-youtube-finder", "width=480,height=760,noopener,noreferrer");
   }
 
+  const liveConfig = provider !== "youtube" ? LIVE_PROVIDERS[provider] : null;
+
   return (
     <div className="watch-player">
       <h2>Watch Together</h2>
+      {isLeader && (
+        <div className="watch-provider-tabs">
+          <button
+            type="button"
+            className={`provider-tab${provider === "youtube" ? " active" : ""}`}
+            onClick={() => switchProvider("youtube")}
+          >
+            YouTube
+          </button>
+          {Object.entries(LIVE_PROVIDERS).map(([id, cfg]) => (
+            <button
+              key={id}
+              type="button"
+              className={`provider-tab${provider === id ? " active" : ""}`}
+              onClick={() => switchProvider(id)}
+            >
+              {cfg.label} (live)
+            </button>
+          ))}
+        </div>
+      )}
       {isLeader ? (
         <>
           <form className="watch-load" onSubmit={handleLoad}>
             <input
               type="text"
-              placeholder="Paste a YouTube link, or type a search and find it →"
+              placeholder={
+                liveConfig ? liveConfig.placeholder : "Paste a YouTube link, or type a search and find it →"
+              }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
             <button type="submit">Load</button>
           </form>
-          <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
-            Find on YouTube ↗
-          </button>
+          {provider === "youtube" && (
+            <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
+              Find on YouTube ↗
+            </button>
+          )}
         </>
       ) : (
         <p className="room-tag">Only the room leader can choose what to play.</p>
@@ -326,9 +449,18 @@ export default function WatchPlayer({ roomId, isLeader }) {
       {error && <p className="watch-error">{error}</p>}
       <div
         className={`watch-frame${isLeader ? "" : " locked"}`}
-        hidden={!hasVideo}
+        hidden={!hasVideo || !!liveConfig}
         ref={containerRef}
       />
+      {liveConfig && liveChannel && (
+        <iframe
+          key={`${provider}-${liveChannel}`}
+          className={`watch-frame${isLeader ? "" : " locked"}`}
+          src={liveConfig.embedUrl(liveChannel)}
+          title={`${liveConfig.label} stream`}
+          allowFullScreen
+        />
+      )}
       {!hasVideo && <p className="room-tag">Nothing playing yet. Room: {roomId}</p>}
     </div>
   );
