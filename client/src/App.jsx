@@ -6,6 +6,7 @@ import HomePage from "./components/HomePage";
 import RoomsPage from "./components/RoomsPage";
 import ThemesPage from "./components/ThemesPage";
 import SettingsPage from "./components/SettingsPage";
+import HelpPage from "./components/HelpPage";
 import { getRoute, navigate, setRoomPath } from "./lib/router";
 import "./App.css";
 import "./immersive-theater.css";
@@ -103,6 +104,7 @@ function App() {
       {route.page === "rooms" && <RoomsPage />}
       {route.page === "themes" && <ThemesPage onCreate={createRoom} />}
       {route.page === "settings" && <SettingsPage />}
+      {route.page === "help" && <HelpPage />}
       {route.page === "home" && (
         <HomePage
           pendingTheme={pendingTheme}
