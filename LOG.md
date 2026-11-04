@@ -5,6 +5,36 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — Search for Twitch/Kick; ruled out Netflix/Hulu/Prime/Disney+/Tubi
+
+**Who:** Adrian, with Claude Code. Touches John's file (`WatchPlayer.jsx`,
+Job 3) again — same as the live-providers entry above.
+
+**What we decided:** Adrian wanted to search Twitch/Kick the way the app
+already searches YouTube, plus asked about adding Netflix, Hulu, Amazon
+Prime, Disney+, and Tubi as watch-together sources.
+
+**Search — built it.** Same pattern as the existing YouTube finder (added
+earlier for the same reason: none of these sites can be embedded for
+browsing): a "Find on Twitch/Kick ↗" button opens a popup to that
+service's own search page, no API key or developer account needed.
+Verified both open the correct domain with the typed query.
+
+**Netflix/Hulu/Prime/Disney+/Tubi — not building this, and said so before
+starting.** This isn't the same shape of problem as Daily.co vs. Jitsi
+(where the fix was finding the actual free option). YouTube/Twitch/Kick
+all ship a public embed player specifically so creators can share streams
+elsewhere; Netflix/Hulu/Prime/Disney+ have no such product at all, by
+design — their subscription model depends on content only playing inside
+their own verified app, enforced by DRM, HTTP framing headers, and
+licensing terms, not a missing free tier. Confirmed Tubi (free,
+ad-supported) is the same story even though it carries no subscription —
+same "no public embed program" conclusion John's Oct 30 research spike
+already reached for Netflix/Hulu. The existing screen-share feature (Job 2)
+stays the real answer for watching any of these together.
+
+---
+
 ## 2026-11-04 — Free live-streaming providers: Twitch and Kick
 
 **Who:** Adrian, with Claude Code, on `feature/live-streaming-providers`.
