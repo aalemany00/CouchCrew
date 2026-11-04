@@ -23,6 +23,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [flourish, setFlourish] = useState(null); // "flicker" | "shake" | "hearts" | "confetti"
   const [creditsVisible, setCreditsVisible] = useState(false);
   const [leaving, setLeaving] = useState(false); // theatrical pause before actually leaving
+  const [roomFull, setRoomFull] = useState(null); // { max } once the server rejects a full room
 
   const amLeader = connected && leaderId === socket.id;
 
@@ -163,6 +164,9 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
       setLeaderId(leaderId);
       if (theme) setTheme(theme);
     }
+    function handleRoomFull({ max }) {
+      setRoomFull({ max });
+    }
     // Genre-matched easter eggs: anyone typing a theme's trigger phrase
     // while that theme is active sets off a visual flourish for the whole
     // room — this rides along on the already-broadcast chat message.
@@ -180,6 +184,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     socket.on("disconnect", handleDisconnect);
     socket.on("room:joined", handleJoined);
     socket.on("room:presence", handlePresence);
+    socket.on("room:full", handleRoomFull);
     socket.on("chat:message", handleChatMessage);
 
     socket.connect();
@@ -189,6 +194,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
       socket.off("disconnect", handleDisconnect);
       socket.off("room:joined", handleJoined);
       socket.off("room:presence", handlePresence);
+      socket.off("room:full", handleRoomFull);
       socket.off("chat:message", handleChatMessage);
       socket.disconnect();
       clearTimeout(toastTimeoutRef.current);
@@ -196,6 +202,27 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
       clearTimeout(holdTimeoutRef.current);
     };
   }, [roomId, name]);
+
+  // Rejected by the server (server/index.js MAX_ROOM_SIZE) - video call
+  // quality degrades badly past this well before cost is a real concern
+  // (see LOG.md for the math). Nothing else in the room ever mounts.
+  if (roomFull) {
+    return (
+      <div className="cinema-shell" data-theme="classic">
+        <PixelTheaterScenery theme="classic" mode="lobby" />
+        <div className="join-screen">
+          <h1>CouchCrew</h1>
+          <p>
+            This room already has {roomFull.max} people in it — that's the cap, since video
+            quality falls apart past that anyway.
+          </p>
+          <button type="button" onClick={onLeave}>
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cinema-shell" data-theme={theme}>

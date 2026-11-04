@@ -8,6 +8,10 @@ import { registerIceRoute } from "./ice.js";
 const PORT = process.env.PORT || 3001;
 const MAX_HISTORY = 50;
 const MAX_MESSAGE_LENGTH = 500;
+// Past this, video call quality degrades badly (per real testing - cameras
+// stutter above 4-5 people) well before Cloudflare TURN cost is a real
+// concern. See LOG.md for the bandwidth math.
+const MAX_ROOM_SIZE = 5;
 
 // Comma-separated list of allowed frontend origins, e.g.
 // "https://couchcrew.vercel.app,http://localhost:5173". Defaults to "*" so
@@ -92,6 +96,12 @@ io.on("connection", (socket) => {
   }
 
   socket.on("room:join", ({ roomId, name }) => {
+    const existing = rooms.get(roomId);
+    if (existing && existing.size >= MAX_ROOM_SIZE && !existing.has(socket.id)) {
+      socket.emit("room:full", { roomId, max: MAX_ROOM_SIZE });
+      return;
+    }
+
     joinedRoomId = roomId;
     const displayName = (name || "Guest").slice(0, 40);
     socket.join(roomId);

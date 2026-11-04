@@ -5,6 +5,48 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-04 — Room size cap (5) and a Help page
+
+**Who:** Adrian, with Claude Code, on `feature/room-size-cap-and-help`.
+
+**What happened:** after merging the TURN relay, the team discussed in
+Discord whether to add usage tracking/a kill-switch to avoid ever getting
+billed by Cloudflare. Henry ran the numbers: at 3 people per call, it'd
+take about 370 hours (~15 days straight, no breaks) to burn through the
+1,000 GB free allowance in a month; at 2 people, ~41 days straight, which
+isn't possible in a 30-day month. His own point mattered more than the
+cost one: camera quality stutters badly past 4-5 people in a call anyway,
+regardless of cost. Decided against building usage tracking/a kill-switch
+for that reason — a room size limit covers the problem that's actually
+real, and the cost risk is negligible by comparison.
+
+**What we built:**
+- `server/index.js`: `MAX_ROOM_SIZE = 5`. `room:join` now rejects anyone
+  past that with a `room:full` event instead of letting them in; existing
+  members already in the room aren't affected by their own room filling up
+  around them (checked by socket id, not just room size).
+- `RoomView.jsx`: listens for `room:full` and shows a blocking "this room
+  already has N people" screen with a button back to Home, instead of
+  rendering the room UI at all.
+- New `HelpPage.jsx` (`/help`, added to `NavBar`): explains the room limit
+  (video quality first, cost a distant second, with the actual numbers),
+  which streaming services work and why Netflix/Hulu/Prime/Disney+ don't,
+  and what a "room is full" message means.
+
+**Verified:** temporarily set `MAX_ROOM_SIZE = 1` locally, confirmed a
+second browser tab joining the same room got the blocking "room is full"
+screen (not just an error toast) and "Back to Home" correctly navigated
+away; restored to 5 before committing. Help page renders and is reachable
+from the nav bar.
+
+**Note on the bandwidth numbers:** the 370-hours/41-days figures came from
+Henry's own Claude session's calculation, not independently re-derived
+here — cited as reported, not re-verified from scratch, since the room
+size limit doesn't actually depend on the cost math being exactly right
+(it's there for video quality either way).
+
+---
+
 ## 2026-11-04 — Real in-app YouTube search (corrects an earlier decision)
 
 **Who:** Adrian, with Claude Code. Touches John's file again (`WatchPlayer.jsx`).

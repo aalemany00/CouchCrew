@@ -10,6 +10,7 @@ export function getRoute() {
   if (path === "/rooms") return { page: "rooms" };
   if (path === "/themes") return { page: "themes" };
   if (path === "/settings") return { page: "settings" };
+  if (path === "/help") return { page: "help" };
   return { page: "home" };
 }
 
