@@ -2,14 +2,14 @@
 // this. Keep original flavor text here, not copyrighted dialogue.
 
 export const THEMES = [
-  { id: "classic", label: "Classic", icon: "🎬", tagline: "The house style — warm theater gold." },
-  { id: "horror", label: "Horror", icon: "🎃", tagline: "Blood-red lights, flickering marquee." },
-  { id: "romance", label: "Romance", icon: "💗", tagline: "Pink-purple glow, soft and warm." },
-  { id: "thriller", label: "Thriller", icon: "🔪", tagline: "Cold blues, high-contrast tension." },
-  { id: "comedy", label: "Comedy", icon: "🎭", tagline: "Bright yellow, playful energy." },
-  { id: "scifi", label: "Sci-Fi", icon: "🛸", tagline: "Electric cyan-violet, alien glow." },
-  { id: "fantasy", label: "Fantasy", icon: "🐉", tagline: "Royal gold and deep forest green." },
-  { id: "action", label: "Action", icon: "🚁", tagline: "Explosive orange-red, high energy." },
+  { id: "classic", label: "Classic", icon: "🎬", tagline: "Velvet curtains, marquee bulbs and a classic picture palace." },
+  { id: "horror", label: "Horror", icon: "🎃", tagline: "A ruined haunted cinema with cobwebs, skulls and candlelight." },
+  { id: "romance", label: "Romance", icon: "💗", tagline: "A candlelit rose garden theater with romantic velvet seating." },
+  { id: "thriller", label: "Thriller", icon: "🔪", tagline: "Rainy detective cinema, evidence board and shadowy windows." },
+  { id: "comedy", label: "Comedy", icon: "🎭", tagline: "A bright vaudeville stage with balloons and comedy masks." },
+  { id: "scifi", label: "Sci-Fi", icon: "🛸", tagline: "A starship screening bay with consoles and planetary windows." },
+  { id: "fantasy", label: "Fantasy", icon: "🐉", tagline: "A castle cinema with stone arches, banners and enchanted relics." },
+  { id: "action", label: "Action", icon: "🚁", tagline: "An industrial action bunker with hazard stripes and equipment crates." },
 ];
 
 export const SNACKS = [

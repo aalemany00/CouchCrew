@@ -5,6 +5,47 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-01 — Pixel-art theater scenes for all 8 themes (ChatGPT-built, reviewed and merged)
+
+**Who:** Adrian directed ChatGPT to build this directly (not Claude Code);
+Claude Code reviewed it, found and fixed one bug, and merged it.
+
+**What happened:** Adrian's own quick CSS-gradient pass (`feature/theme-scenes`,
+not merged) didn't look enough like his reference mockups. He had ChatGPT
+build a replacement directly against the CouchCrew repo. Its first attempt
+(`CinemaScenery.jsx`) was emoji scattered over CSS gradients — same
+shortcut, plus a real bug (a multi-screen-height blank gap on Home from a
+sizing mistake in its CSS). Its second attempt (`PixelTheaterScenery.jsx`)
+was a genuine step up: a real parametrized SVG template giving each theme
+distinct hand-coded architecture (Horror's broken roofline, Thriller's
+rain-streaked blinds, Sci-Fi's ringed-planet porthole, Fantasy's stone
+arch, etc.), applied consistently to Home, the Themes gallery, and the
+room screen.
+
+**Bug found during review, not by guessing:** inside a room, the "Watch
+Together" / "Video & Screen Share" / "Chat" panel headings were nearly
+invisible — near-black text on a dark panel. Traced it with computed
+styles (not assumption) to a leftover Vite scaffold file, `index.css`,
+still imported in `main.jsx` from before this project had its own design.
+Its own `h1, h2 { color: var(--text-h) }` rule (`--text-h: #08060d` in
+light color-scheme) was the only rule setting color on those headings, so
+it won even though the app's own CSS loads after it — nobody had actually
+looked closely at that text against a dark panel until now. This bug
+already existed on `main`, unrelated to either theme attempt; it just
+never got noticed before. Fixed by deleting the unused `index.css` import
+and the file itself (confirmed nothing in the app referenced its classes).
+
+**Verified:** all 8 themes' distinct art confirmed on Home, the Themes
+gallery, and inside a real room; headings legible after the fix; theme
+ids/icons unchanged from the existing set so server-side sync
+(`VALID_THEMES`, `theme:set`) stays compatible.
+
+**Note on process:** this is the first piece of CouchCrew built outside
+Claude Code. Logged here per the same course requirement either way — the
+log is about what changed and why, not which tool made the change.
+
+---
+
 ## 2026-10-31 — Rebuilt the Home hero to match the mockup closely
 
 **Who:** Adrian, with Claude Code, on `feature/theater-hero-rebuild`.

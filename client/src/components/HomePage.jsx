@@ -2,6 +2,7 @@ import { THEMES } from "../lib/theater";
 import { generateRoomCode } from "../lib/roomCode";
 import { navigate } from "../lib/router";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
+import PixelTheaterScenery from "./PixelTheaterScenery";
 
 export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
   function createRoom() {
@@ -17,7 +18,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
         <div className="hero-main">
           <div className="hero-screen-wrap">
             <div className="hero-screen">
-              <ScreenBackdrop />
+              {!pendingTheme || pendingTheme === "classic" ? <ScreenBackdrop /> : <div className="genre-screen-backdrop" aria-hidden="true" />}
               <div className="hero-screen-content">
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
@@ -31,21 +32,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
                 </button>
               </div>
             </div>
-            <PopcornAndReel />
-          </div>
-
-          {/* A preview, not a real chat — nobody's in a room yet on this
-              page. Matches the mockup's own empty state. */}
-          <div className="hero-chat-preview" aria-hidden="true">
-            <h2>Chat</h2>
-            <div className="hero-chat-empty">
-              <span className="chat-bubble-icon">💬</span>
-              <p>Start chatting with your crew!</p>
-            </div>
-            <div className="hero-chat-input">
-              <span>Type a message...</span>
-              <span className="send-icon">➤</span>
-            </div>
+            {(!pendingTheme || pendingTheme === "classic") && <PopcornAndReel />}
           </div>
         </div>
       </div>
@@ -68,7 +55,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
               data-theme={t.id}
               onClick={() => onSelectTheme(pendingTheme === t.id ? null : t.id)}
             >
-              <span className="poster-icon">{t.icon}</span>
+              <span className="pixel-poster-art"><PixelTheaterScenery theme={t.id} mode="poster" /></span>
               <span className="poster-label">{t.label}</span>
               <span className="poster-tagline">{t.tagline}</span>
             </button>
