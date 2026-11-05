@@ -4,6 +4,7 @@ import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { registerIceRoute } from "./ice.js";
+import { registerArchiveRoutes } from "./archive.js";
 
 const PORT = process.env.PORT || 3001;
 const MAX_HISTORY = 50;
@@ -44,6 +45,7 @@ app.get("/api/room-exists/:code", (req, res) => {
 });
 
 registerIceRoute(app);
+registerArchiveRoutes(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

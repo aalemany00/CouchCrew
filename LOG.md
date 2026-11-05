@@ -5,6 +5,65 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Archive.org: real synced playback of legal, public-domain films
+
+**Who:** Adrian, with Claude Code, on `feature/archive-org-watch-together`
+(branched off `feature/profile-bio-and-home-cleanup`, since nothing here is
+merged to `main` yet).
+
+**Why:** Adrian wants real in-app convenience beyond screen-share for
+"watch something together," and the only way to do that *legally* is
+content we actually have the right to show. Netflix/Hulu/Disney+/Prime are
+out regardless of technique (DMCA, not just a technical wall - even a
+Teleparty-style browser extension only works because the viewer stays in
+their own authenticated tab; nothing is ever embedded). The Internet
+Archive hosts thousands of public-domain films with a free, keyless,
+documented API and direct CORS-enabled mp4 files - legal to embed and sync
+because copyright has expired, not because of a loophole.
+
+**What we built:**
+- `server/archive.js` (new): proxies archive.org's search and metadata
+  endpoints (`GET /api/archive/search`, `GET /api/archive/item/:id`) rather
+  than calling them from the browser - avoids depending on archive.org's
+  CORS behavior and keeps every viewer's browser from hitting it directly.
+  No API key needed (archive.org's search/metadata API is free and public).
+- `WatchPlayer.jsx`: Archive.org is a second **on-demand** provider
+  alongside YouTube (distinct from Twitch/Kick, which stay "live, no
+  sync"). The YouTube IFrame Player and a plain `<video>` element are both
+  accessed through one small adapter interface (`getPlayerFor`/
+  `isPlayerReady`, wrapping a `<video>` as `makeVideoElementPlayer`), so
+  the actual drift-correction/conflict-resolution engine - the delicate
+  part John's file header calls out - runs completely unmodified for
+  either provider; "youtube" vs "archive" only matters at the handful of
+  spots that decide which player object to talk to. Search/load reuses the
+  exact same UI and `sync:event` "load" shape YouTube already uses, just
+  tagged `provider: "archive"` with a resolved mp4 URL in place of a video
+  ID.
+- Fixed one real cross-talk risk while wiring this up: the hidden YouTube
+  player's own `onStateChange` callback didn't check which provider was
+  active, so pausing it programmatically on a provider switch could have
+  fired a stray "pause" event while Archive.org was actually live. Added
+  the missing guard.
+
+**Verified (two-tab, real archive.org item):** searched "night of the
+living dead" with no API key needed, got real search results with
+thumbnails; loaded a public-domain print (archive.org identifier
+`night-of-the-living-dead-1968-horror-mystery-480-x-640.mp-4-converted`)
+and confirmed `Content-Type: video/mp4`, open CORS, and byte-range support
+via a direct HEAD request first. In the room: leader's play started the
+follower's video at the same position; pausing on the leader's side paused
+the follower's at the identical timestamp (0:10); seeking on the leader's
+scrubber to 33:28 landed the follower on the same frame; switching the
+leader back to YouTube mid-session switched the follower too, with no
+cross-talk or console errors from the now-hidden, paused archive player.
+
+**Not covered:** real network latency/drift over an actual cross-network
+connection (only tested on localhost), and most archive.org items aren't
+famous films - search quality depends entirely on what's been uploaded
+there and how it's titled.
+
+---
+
 ## 2026-11-05 — Theme/About cleanup, user bios, drop the Rooms tab
 
 **Who:** Adrian, with Claude Code, on `feature/profile-bio-and-home-cleanup`
