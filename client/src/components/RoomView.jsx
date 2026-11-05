@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 import { THEME_EASTER_EGGS } from "../lib/theater";
 import { getSavedAvatar } from "../lib/avatar";
+import { getSavedBio } from "../lib/profile";
 import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
@@ -94,8 +95,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
   // Pushes a name/avatar change made in the room settings drawer to the
   // server right away, instead of only taking effect on the next rejoin.
-  function handleProfileSave({ name, avatar }) {
-    socket.emit("profile:update", { roomId, name, avatar });
+  function handleProfileSave({ name, avatar, bio }) {
+    socket.emit("profile:update", { roomId, name, avatar, bio });
   }
 
   // Hold-to-leave: holding for 3s shows a theatrical pause, then leaves. A
@@ -132,7 +133,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     // own, but it doesn't know about our room concept).
     function handleConnect() {
       setConnected(true);
-      socket.emit("room:join", { roomId, name, avatar: getSavedAvatar() });
+      socket.emit("room:join", { roomId, name, avatar: getSavedAvatar(), bio: getSavedBio() });
     }
     function handleDisconnect() {
       setConnected(false);

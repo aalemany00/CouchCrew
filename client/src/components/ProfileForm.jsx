@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
 import { getSavedAvatar, processAvatarFile, saveAvatar } from "../lib/avatar";
+import { getSavedBio } from "../lib/profile";
+
+const MAX_BIO_LENGTH = 160;
 
 function getSavedName() {
   try {
@@ -10,12 +13,14 @@ function getSavedName() {
 }
 
 // Shared by the standalone Settings page and the in-room settings drawer —
-// same name/avatar editor either way. `onSave` is called with the new
-// { name, avatar } after it's written to localStorage, so a caller already
-// in a room can also push it to the server (profile:update).
+// same name/avatar/bio editor either way. `onSave` is called with the new
+// { name, avatar, bio } after it's written to localStorage, so a caller
+// already in a room can also push it to the server (profile:update) — the
+// bio shows up when someone taps your name or photo (see MemberProfileCard).
 export default function ProfileForm({ onSave }) {
   const [name, setName] = useState(getSavedName);
   const [avatar, setAvatar] = useState(getSavedAvatar);
+  const [bio, setBio] = useState(getSavedBio);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const fileRef = useRef(null);
@@ -40,8 +45,10 @@ export default function ProfileForm({ onSave }) {
   function save(e) {
     e.preventDefault();
     const trimmed = name.trim();
+    const trimmedBio = bio.trim().slice(0, MAX_BIO_LENGTH);
     try {
       localStorage.setItem("couchcrew:name", trimmed);
+      localStorage.setItem("couchcrew:bio", trimmedBio);
     } catch {
       // Storage can be unavailable (private browsing, etc.) — the form
       // still works for the current session.
@@ -49,7 +56,7 @@ export default function ProfileForm({ onSave }) {
     saveAvatar(avatar);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    onSave?.({ name: trimmed, avatar });
+    onSave?.({ name: trimmed, avatar, bio: trimmedBio });
   }
 
   return (
@@ -82,6 +89,17 @@ export default function ProfileForm({ onSave }) {
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
       />
+      <label htmlFor="bio">Bio</label>
+      <textarea
+        id="bio"
+        value={bio}
+        onChange={(e) => setBio(e.target.value.slice(0, MAX_BIO_LENGTH))}
+        placeholder="A line about yourself — shown when someone taps your name or photo"
+        rows={3}
+      />
+      <span className="bio-count">
+        {bio.length}/{MAX_BIO_LENGTH}
+      </span>
       <button type="submit">{saved ? "Saved!" : "Save"}</button>
     </form>
   );

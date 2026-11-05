@@ -3,7 +3,6 @@ import JoinScreen from "./components/JoinScreen";
 import RoomView from "./components/RoomView";
 import NavBar from "./components/NavBar";
 import HomePage from "./components/HomePage";
-import RoomsPage from "./components/RoomsPage";
 import ThemesPage from "./components/ThemesPage";
 import SettingsPage from "./components/SettingsPage";
 import HelpPage from "./components/HelpPage";
@@ -101,18 +100,10 @@ function App() {
     <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
       <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
       <NavBar currentPage={route.page} />
-      {route.page === "rooms" && <RoomsPage />}
       {route.page === "themes" && <ThemesPage onCreate={createRoom} />}
       {route.page === "settings" && <SettingsPage />}
       {route.page === "help" && <HelpPage />}
-      {route.page === "home" && (
-        <HomePage
-          pendingTheme={pendingTheme}
-          onSelectTheme={setPendingTheme}
-          onCreate={createRoom}
-          creating={creatingRoom}
-        />
-      )}
+      {route.page === "home" && <HomePage onCreate={createRoom} creating={creatingRoom} />}
     </div>
   );
 }
