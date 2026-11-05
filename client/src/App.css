@@ -1413,3 +1413,56 @@ button.secondary.leave {
     width: 100%;
   }
 }
+
+/* Call extras (Job 2): loudness meter, "speaking" ring, per-person volume and
+   the in-call device picker. */
+.video-tile.speaking {
+  outline: 2px solid #3ba55d;
+  outline-offset: -2px;
+}
+
+.video-tile-meter {
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  bottom: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.video-tile-meter > span {
+  display: block;
+  height: 100%;
+  background: #3ba55d;
+  transition: width 80ms linear;
+}
+
+.video-tile-listen {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.video-tile-listen button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.video-tile-listen input[type="range"] {
+  width: 70px;
+}
+
+.call-devices {
+  margin-top: 0.75rem;
+}
