@@ -5,12 +5,12 @@
 // (pointer-events: none, see .watch-frame.locked) and their load form is
 // hidden. The leader's actions broadcast through the server's generic
 // "sync:event" relay as { type, ... } objects:
-//   load   { provider, videoId, time, playing }  (youtube) - everyone switches to this video
+//   load   { provider, videoId, time, playing }  (youtube/archive) - everyone switches to this video
 //   load   { provider, channel }                 (twitch/kick) - everyone switches to this channel
-//   play   { time }                    (youtube only)
-//   pause  { time }                    (youtube only)
-//   seek   { time }                    (youtube only)
-//   tick   { time }                    (youtube only) - heartbeat from whoever last acted, to correct drift
+//   play   { time }                    (youtube/archive only)
+//   pause  { time }                    (youtube/archive only)
+//   seek   { time }                    (youtube/archive only)
+//   tick   { time }                    (youtube/archive only) - heartbeat from whoever last acted, to correct drift
 //   request                            - a new joiner asking for the current state
 //   state  { provider, videoId, time, playing } or { provider, channel } - reply to a request
 //
@@ -20,8 +20,21 @@
 // LOG.md): kept entirely additive so the YouTube sync logic below (the
 // part that's actually delicate - drift correction, conflict resolution)
 // is untouched when provider is "youtube", which stays the default.
+//
+// Added 2026-11-06 (Adrian, flagged for John's review - see LOG.md):
+// Archive.org (public-domain films, playable/legal to show in-app unlike
+// Netflix/Hulu/etc.) is a second on-demand provider alongside YouTube. The
+// YT-specific player object and the plain <video> element used for
+// Archive.org are both accessed through the same small adapter interface
+// (getPlayerFor/isPlayerReady below) so all of the drift-correction/
+// conflict-resolution logic that follows runs unmodified for either one -
+// "youtube" vs "archive" only matters at the handful of spots that decide
+// *which* player object to talk to.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const ON_DEMAND_PROVIDERS = new Set(["youtube", "archive"]);
 
 const LIVE_PROVIDERS = {
   twitch: {
@@ -78,6 +91,82 @@ async function searchYouTubeVideos(query) {
     channel: item.snippet.channelTitle,
     thumbnail: item.snippet.thumbnails?.default?.url,
   }));
+}
+
+// Archive.org search/lookup, proxied through our own server (server/archive.js)
+// rather than called directly so we're not relying on archive.org's CORS
+// behavior. No API key needed - unlike YouTube, this always works.
+async function searchArchiveVideos(query) {
+  const res = await fetch(`${SERVER_URL}/api/archive/search?q=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error(`Archive.org search failed (${res.status})`);
+  const data = await res.json();
+  return (data.items || []).map((item) => ({
+    identifier: item.identifier,
+    title: item.title,
+    year: item.year,
+    thumbnail: `https://archive.org/services/img/${encodeURIComponent(item.identifier)}`,
+  }));
+}
+
+async function resolveArchiveItem(identifier) {
+  const res = await fetch(`${SERVER_URL}/api/archive/item/${encodeURIComponent(identifier)}`);
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || `Archive.org lookup failed (${res.status})`);
+  return body; // { url, title }
+}
+
+// A plain archive.org identifier, or a /details/<identifier> link - anything
+// else is treated as a search query instead.
+function parseArchiveIdentifier(input) {
+  const text = input.trim();
+  if (!text) return null;
+  try {
+    const parsed = new URL(text);
+    if (!parsed.hostname.endsWith("archive.org")) return null;
+    const match = parsed.pathname.match(/^\/details\/([^/]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return /^[\w.-]+$/.test(text) ? text : null;
+  }
+}
+
+// Seeking before a freshly-assigned <video> has loaded its metadata is
+// silently ignored by the browser (duration/seekable range aren't known
+// yet) - wait for it when that's the case, same as the YouTube player
+// already handles via its own onReady/pendingRef.
+function seekWhenReady(videoEl, time) {
+  if (videoEl.readyState >= 1) {
+    videoEl.currentTime = time;
+    return;
+  }
+  const onLoaded = () => {
+    videoEl.currentTime = time;
+    videoEl.removeEventListener("loadedmetadata", onLoaded);
+  };
+  videoEl.addEventListener("loadedmetadata", onLoaded);
+}
+
+// Wraps a plain <video> element in the same small interface the YouTube
+// IFrame Player already exposes, so applyState/currentState/handleSync
+// below can talk to either one without knowing which is active.
+function makeVideoElementPlayer(videoEl) {
+  return {
+    getCurrentTime: () => videoEl.currentTime || 0,
+    getPlayerState: () => (videoEl.paused ? YT_PAUSED : YT_PLAYING),
+    seekTo: (time) => seekWhenReady(videoEl, time),
+    playVideo: () => videoEl.play().catch(() => {}),
+    pauseVideo: () => videoEl.pause(),
+    loadVideoById: (src, time) => {
+      if (videoEl.src !== src) videoEl.src = src;
+      seekWhenReady(videoEl, time);
+      videoEl.play().catch(() => {});
+    },
+    cueVideoById: (src, time) => {
+      if (videoEl.src !== src) videoEl.src = src;
+      seekWhenReady(videoEl, time);
+      videoEl.pause();
+    },
+  };
 }
 
 const DRIFT_THRESHOLD = 2; // seconds of drift before a tick corrects a viewer
@@ -138,12 +227,11 @@ export default function WatchPlayer({ roomId, isLeader }) {
   const providerRef = useRef(provider);
   useEffect(() => {
     providerRef.current = provider;
-    // Switching to a live channel hides the YouTube container (CSS), but a
-    // video playing inside it would otherwise keep its audio running in the
-    // background - pause it explicitly.
-    if (provider !== "youtube") {
-      playerRef.current?.pauseVideo?.();
-    }
+    // Switching away from a provider hides its player (CSS), but it would
+    // otherwise keep playing (and its audio running) in the background -
+    // pause whichever one we just left.
+    if (provider !== "youtube") playerRef.current?.pauseVideo?.();
+    if (provider !== "archive") archiveVideoElRef.current?.pause();
   }, [provider]);
   const liveChannelRef = useRef(liveChannel);
   useEffect(() => {
@@ -152,6 +240,7 @@ export default function WatchPlayer({ roomId, isLeader }) {
 
   const containerRef = useRef(null);
   const playerRef = useRef(null);
+  const archiveVideoElRef = useRef(null);
   const readyRef = useRef(false);
   const videoIdRef = useRef(null);
   const pendingRef = useRef(null); // state to apply once the player is ready
@@ -169,6 +258,19 @@ export default function WatchPlayer({ roomId, isLeader }) {
     isLeaderRef.current = isLeader;
   }, [isLeader]);
 
+  // The two on-demand providers are accessed through this one interface
+  // (see makeVideoElementPlayer above) - everything below that calls
+  // getPlayerFor/isPlayerReady works the same whichever is active.
+  function getPlayerFor(providerName) {
+    if (providerName === "archive") {
+      return archiveVideoElRef.current ? makeVideoElementPlayer(archiveVideoElRef.current) : null;
+    }
+    return playerRef.current;
+  }
+  function isPlayerReady(providerName) {
+    return providerName === "archive" ? !!archiveVideoElRef.current : readyRef.current;
+  }
+
   // Events are stamped with our socket id so simultaneous actions from two
   // people resolve the same way on both sides.
   const send = useCallback(
@@ -182,8 +284,9 @@ export default function WatchPlayer({ roomId, isLeader }) {
   );
 
   const currentState = useCallback(() => {
-    const p = playerRef.current;
-    if (!p || !readyRef.current || !videoIdRef.current) return null;
+    const activeProvider = providerRef.current;
+    const p = getPlayerFor(activeProvider);
+    if (!p || !isPlayerReady(activeProvider) || !videoIdRef.current) return null;
     return {
       videoId: videoIdRef.current,
       time: p.getCurrentTime(),
@@ -192,12 +295,16 @@ export default function WatchPlayer({ roomId, isLeader }) {
   }, []);
 
   // Apply a state to the local player without echoing it back to the room.
-  const applyState = useCallback((state) => {
-    const p = playerRef.current;
+  // `forProvider` lets a remote "load"/"state" event target the provider it
+  // names even before the providerRef effect has caught up with a setProvider
+  // call made earlier in the same handler.
+  const applyState = useCallback((state, forProvider) => {
+    const activeProvider = forProvider || providerRef.current;
+    const p = getPlayerFor(activeProvider);
     suppressUntilRef.current = Date.now() + SUPPRESS_MS;
     lastTimeRef.current = { time: state.time, at: Date.now() };
-    if (!p || !readyRef.current) {
-      pendingRef.current = state;
+    if (!p || !isPlayerReady(activeProvider)) {
+      pendingRef.current = { ...state, provider: activeProvider };
       return;
     }
     if (videoIdRef.current !== state.videoId) {
@@ -226,13 +333,16 @@ export default function WatchPlayer({ roomId, isLeader }) {
         events: {
           onReady: () => {
             readyRef.current = true;
-            // A recreated player (hot reload) restores whatever was playing.
+            // A recreated player (hot reload) restores whatever was playing
+            // - but only if that was actually a YouTube video; a state
+            // saved while Archive.org was active belongs to the <video>
+            // element instead, which doesn't go through this callback.
             const state = pendingRef.current || lastKnownRef.current;
             pendingRef.current = null;
-            if (state) applyState(state);
+            if (state?.provider === "youtube") applyState(state, "youtube");
           },
           onStateChange: (e) => {
-            if (!isLeaderRef.current) return;
+            if (!isLeaderRef.current || providerRef.current !== "youtube") return;
             if (Date.now() < suppressUntilRef.current) return;
             const time = playerRef.current.getCurrentTime();
             if (e.data === YT_PLAYING) {
@@ -248,7 +358,8 @@ export default function WatchPlayer({ roomId, isLeader }) {
     });
     return () => {
       cancelled = true;
-      lastKnownRef.current = currentState() || lastKnownRef.current;
+      const snapshot = currentState();
+      if (snapshot) lastKnownRef.current = { ...snapshot, provider: providerRef.current };
       readyRef.current = false;
       videoIdRef.current = null; // the new player starts empty
       playerRef.current?.destroy?.();
@@ -259,51 +370,50 @@ export default function WatchPlayer({ roomId, isLeader }) {
   // Incoming sync events from the rest of the room.
   useEffect(() => {
     function handleSync(event) {
-      const p = playerRef.current;
       const eventProvider = event.provider || "youtube";
       switch (event.type) {
         case "load":
           waitingForStateRef.current = false;
-          if (eventProvider !== "youtube") {
+          if (!ON_DEMAND_PROVIDERS.has(eventProvider)) {
             setProvider(eventProvider);
             setLiveChannel(event.channel);
             setHasVideo(true);
             break;
           }
-          setProvider("youtube");
+          setProvider(eventProvider);
           setLiveChannel(null);
           controllerRef.current = false;
-          applyState(event);
+          applyState(event, eventProvider);
           break;
         case "state":
           // Only the first reply matters, and only to someone who asked.
           if (!waitingForStateRef.current) break;
           waitingForStateRef.current = false;
-          if (eventProvider !== "youtube") {
+          if (!ON_DEMAND_PROVIDERS.has(eventProvider)) {
             setProvider(eventProvider);
             setLiveChannel(event.channel);
             setHasVideo(true);
             break;
           }
-          setProvider("youtube");
+          setProvider(eventProvider);
           setLiveChannel(null);
-          applyState(event);
+          applyState(event, eventProvider);
           break;
         case "request": {
-          if (providerRef.current !== "youtube") {
+          if (!ON_DEMAND_PROVIDERS.has(providerRef.current)) {
             if (liveChannelRef.current) {
               send({ type: "state", provider: providerRef.current, channel: liveChannelRef.current });
             }
             break;
           }
           const state = currentState();
-          if (state) send({ type: "state", provider: "youtube", ...state });
+          if (state) send({ type: "state", provider: providerRef.current, ...state });
           break;
         }
         case "play":
         case "pause":
         case "seek":
-          if (providerRef.current !== "youtube") break;
+          if (!ON_DEMAND_PROVIDERS.has(providerRef.current)) break;
           if (!videoIdRef.current) break;
           // Conflict: we acted at the same moment. The lower socket id wins on
           // both sides, so everyone converges on the same state.
@@ -319,12 +429,13 @@ export default function WatchPlayer({ roomId, isLeader }) {
             time: event.time,
             playing:
               event.type === "play" ||
-              (event.type === "seek" && p?.getPlayerState() === YT_PLAYING),
+              (event.type === "seek" && getPlayerFor(providerRef.current)?.getPlayerState() === YT_PLAYING),
           });
           break;
         case "tick": {
-          if (providerRef.current !== "youtube") break;
-          if (!p || !readyRef.current || !videoIdRef.current) break;
+          if (!ON_DEMAND_PROVIDERS.has(providerRef.current)) break;
+          const p = getPlayerFor(providerRef.current);
+          if (!p || !isPlayerReady(providerRef.current) || !videoIdRef.current) break;
           if (Math.abs(p.getCurrentTime() - event.time) > DRIFT_THRESHOLD) {
             suppressUntilRef.current = Date.now() + SUPPRESS_MS;
             lastTimeRef.current = { time: event.time, at: Date.now() };
@@ -349,18 +460,21 @@ export default function WatchPlayer({ roomId, isLeader }) {
     };
   }, [applyState, currentState, send]);
 
-  // Detect local seeks (the YouTube API has no seek event) and send heartbeats.
+  // Detect local seeks (the YouTube API has no seek event; this doubles as
+  // the mechanism for Archive.org's native <video> too, for consistency)
+  // and send heartbeats.
   useEffect(() => {
     const poll = setInterval(() => {
-      const p = playerRef.current;
-      if (!p || !readyRef.current || !videoIdRef.current) return;
+      const activeProvider = providerRef.current;
+      const p = getPlayerFor(activeProvider);
+      if (!p || !isPlayerReady(activeProvider) || !videoIdRef.current) return;
       const now = Date.now();
       const playing = p.getPlayerState() === YT_PLAYING;
       const time = p.getCurrentTime();
       const { time: lastTime, at } = lastTimeRef.current;
       const expected = lastTime + (playing ? (now - at) / 1000 : 0);
       lastTimeRef.current = { time, at: now };
-      lastKnownRef.current = { videoId: videoIdRef.current, time, playing };
+      lastKnownRef.current = { videoId: videoIdRef.current, time, playing, provider: activeProvider };
       if (!isLeaderRef.current) return;
       if (now < suppressUntilRef.current) return;
       if (Math.abs(time - expected) > SEEK_THRESHOLD) {
@@ -388,13 +502,59 @@ export default function WatchPlayer({ roomId, isLeader }) {
     setSearchResults(null);
     const state = { videoId, time: 0, playing: true };
     controllerRef.current = true;
-    applyState(state);
+    applyState(state, "youtube");
     send({ type: "load", provider: "youtube", ...state });
+  }
+
+  async function loadArchiveItem(identifier) {
+    setError("");
+    setSearching(true);
+    try {
+      const { url: mediaUrl } = await resolveArchiveItem(identifier);
+      setUrl("");
+      setSearchResults(null);
+      const state = { videoId: mediaUrl, time: 0, playing: true };
+      controllerRef.current = true;
+      applyState(state, "archive");
+      send({ type: "load", provider: "archive", ...state });
+    } catch (err) {
+      setError(err.message || "Couldn't load that item.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function handleLoadArchive() {
+    const identifier = parseArchiveIdentifier(url);
+    if (identifier) {
+      await loadArchiveItem(identifier);
+      return;
+    }
+    if (!url.trim()) {
+      setError("Type something to search for.");
+      return;
+    }
+    setError("");
+    setSearching(true);
+    try {
+      const results = await searchArchiveVideos(url.trim());
+      setSearchResults(results);
+      if (results.length === 0) setError("No results — try a different search.");
+    } catch (err) {
+      setError(err.message || "Search failed.");
+      setSearchResults(null);
+    } finally {
+      setSearching(false);
+    }
   }
 
   async function handleLoad(e) {
     e.preventDefault();
     if (!isLeader) return;
+    if (provider === "archive") {
+      await handleLoadArchive();
+      return;
+    }
     if (provider !== "youtube") {
       handleLoadLive(e);
       return;
@@ -442,6 +602,21 @@ export default function WatchPlayer({ roomId, isLeader }) {
     send({ type: "load", provider, channel });
   }
 
+  // Archive.org's native <video> controls, for when the leader interacts
+  // with them directly - mirrors the YouTube player's onStateChange above.
+  function handleArchivePlay() {
+    if (!isLeaderRef.current || providerRef.current !== "archive") return;
+    if (Date.now() < suppressUntilRef.current) return;
+    controllerRef.current = true;
+    send({ type: "play", time: archiveVideoElRef.current?.currentTime || 0 });
+  }
+  function handleArchivePause() {
+    if (!isLeaderRef.current || providerRef.current !== "archive") return;
+    if (Date.now() < suppressUntilRef.current) return;
+    controllerRef.current = true;
+    send({ type: "pause", time: archiveVideoElRef.current?.currentTime || 0 });
+  }
+
   function switchProvider(nextProvider) {
     setProvider(nextProvider);
     setError("");
@@ -480,6 +655,13 @@ export default function WatchPlayer({ roomId, isLeader }) {
           >
             YouTube
           </button>
+          <button
+            type="button"
+            className={`provider-tab${provider === "archive" ? " active" : ""}`}
+            onClick={() => switchProvider("archive")}
+          >
+            Archive.org
+          </button>
           {Object.entries(LIVE_PROVIDERS).map(([id, cfg]) => (
             <button
               key={id}
@@ -500,9 +682,11 @@ export default function WatchPlayer({ roomId, isLeader }) {
               placeholder={
                 liveConfig
                   ? liveConfig.placeholder
-                  : YOUTUBE_API_KEY
-                    ? "Paste a YouTube link, or type a search and press Search"
-                    : "Paste a YouTube link, or type a search and find it →"
+                  : provider === "archive"
+                    ? "Archive.org link or identifier, or type a search and press Search"
+                    : YOUTUBE_API_KEY
+                      ? "Paste a YouTube link, or type a search and press Search"
+                      : "Paste a YouTube link, or type a search and find it →"
               }
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -510,12 +694,16 @@ export default function WatchPlayer({ roomId, isLeader }) {
             <button type="submit" disabled={searching}>
               {searching
                 ? "Searching…"
-                : provider === "youtube" && YOUTUBE_API_KEY && !parseVideoId(url)
-                  ? "Search"
-                  : "Load"}
+                : provider === "archive"
+                  ? parseArchiveIdentifier(url)
+                    ? "Load"
+                    : "Search"
+                  : provider === "youtube" && YOUTUBE_API_KEY && !parseVideoId(url)
+                    ? "Search"
+                    : "Load"}
             </button>
           </form>
-          {searchResults && (
+          {searchResults && provider === "youtube" && (
             <ul className="youtube-search-results">
               {searchResults.map((r) => (
                 <li key={r.videoId}>
@@ -530,11 +718,37 @@ export default function WatchPlayer({ roomId, isLeader }) {
               ))}
             </ul>
           )}
-          {provider === "youtube" ? (
+          {searchResults && provider === "archive" && (
+            <ul className="youtube-search-results">
+              {searchResults.map((r) => (
+                <li key={r.identifier}>
+                  <button type="button" onClick={() => loadArchiveItem(r.identifier)}>
+                    {r.thumbnail && <img src={r.thumbnail} alt="" />}
+                    <span>
+                      <span className="result-title">{r.title}</span>
+                      <span className="result-channel">{r.year || "Archive.org"}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {provider === "youtube" && (
             <button type="button" className="secondary youtube-finder" onClick={openYouTubeFinder}>
               Find on YouTube ↗
             </button>
-          ) : (
+          )}
+          {provider === "archive" && (
+            <a
+              className="secondary youtube-finder archive-browse-link"
+              href="https://archive.org/details/movies"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Browse Archive.org ↗
+            </a>
+          )}
+          {liveConfig && (
             <button type="button" className="secondary youtube-finder" onClick={openLiveFinder}>
               Find on {liveConfig.label} ↗
             </button>
@@ -546,8 +760,19 @@ export default function WatchPlayer({ roomId, isLeader }) {
       {error && <p className="watch-error">{error}</p>}
       <div
         className={`watch-frame${isLeader ? "" : " locked"}`}
-        hidden={!hasVideo || !!liveConfig}
+        hidden={!hasVideo || provider !== "youtube"}
         ref={containerRef}
+      />
+      {/* Always rendered (just hidden) rather than conditional on provider
+          so archiveVideoElRef stays attached across a provider switch -
+          see makeVideoElementPlayer/getPlayerFor above. */}
+      <video
+        ref={archiveVideoElRef}
+        className={`watch-frame${isLeader ? "" : " locked"}`}
+        hidden={!hasVideo || provider !== "archive"}
+        controls
+        onPlay={handleArchivePlay}
+        onPause={handleArchivePause}
       />
       {liveConfig && liveChannel && (
         <iframe
