@@ -1561,6 +1561,42 @@ video.watch-frame {
   padding: 0.75rem 0;
 }
 
+/* ===== Account (sign in/up/forgot, change password) ===== */
+.account-section {
+  max-width: 320px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.account-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.account-tabs button {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.account-tabs button.active {
+  background: var(--accent);
+  color: #1a1408;
+  border-color: var(--accent);
+}
+
+.account-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .device-settings {
   display: flex;
   flex-direction: column;
