@@ -1,20 +1,16 @@
 // Auto-generated room codes are inspired by well-known film titles instead
 // of random letters/numbers - easier to remember and say out loud than
-// "xk4m9q". Collisions (two rooms wanting "inception" at once) are handled
-// by claimRoomCode's -2/-3 auto-suffix, same as a typed custom code.
+// "xk4m9q". Kept short (single word, or two short ones) on purpose - a
+// full title like "mad-max-fury-road" is too long to read off or type
+// back. Collisions (two rooms wanting "inception" at once) are handled by
+// claimRoomCode's -2/-3 auto-suffix, same as a typed custom code.
 const MOVIE_TITLES = [
-  "the-godfather", "pulp-fiction", "inception", "the-matrix", "jaws",
-  "goodfellas", "casablanca", "the-shining", "fight-club", "se7en",
-  "gladiator", "the-departed", "whiplash", "parasite", "interstellar",
-  "the-dark-knight", "forrest-gump", "the-usual-suspects", "memento",
-  "city-of-god", "spirited-away", "the-prestige", "alien", "heat",
-  "die-hard", "back-to-the-future", "jurassic-park", "the-truman-show",
-  "no-country-for-old-men", "the-social-network", "moonlight",
-  "mad-max-fury-road", "the-grand-budapest-hotel", "her", "arrival",
-  "knives-out", "the-big-lebowski", "donnie-darko", "the-princess-bride",
-  "edge-of-tomorrow", "children-of-men", "the-game", "coco", "up",
-  "WALL-E".toLowerCase(), "ratatouille", "the-incredibles", "toy-story",
-  "jurassic-world", "the-avengers", "logan",
+  "jaws", "heat", "up", "her", "coco", "alien", "aliens", "rocky",
+  "psycho", "frozen", "shrek", "cars", "brave", "avatar", "joker",
+  "tenet", "dune", "soul", "luca", "elf", "memento", "arrival", "logan",
+  "amadeus", "gravity", "inferno", "zootopia", "coraline", "gladiator",
+  "parasite", "whiplash", "inception", "casablanca", "moonlight",
+  "goodfellas", "insidious", "ratatouille", "hereditary", "interstellar",
 ];
 
 export function generateRoomCode() {

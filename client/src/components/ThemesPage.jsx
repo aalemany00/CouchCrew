@@ -2,15 +2,17 @@ import { THEMES } from "../lib/theater";
 import { navigate } from "../lib/router";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 
-// A gallery to browse every theme and jump straight into creating a new
-// room with it already set - "Select Theme" carries the choice to the
-// Create screen (name + optional room code), same as Home's own
-// "Create a Room" button, just with a theme pre-picked.
-export default function ThemesPage({ onSelectTheme }) {
+// Browsing themes here just changes which one is selected (previewed on
+// this page's own background) - it does NOT create or join a room on its
+// own. Creating with the selected theme (or none) is a separate, explicit
+// step via the "Create a Room" button below the gallery.
+export default function ThemesPage({ pendingTheme, onSelectTheme }) {
   return (
     <div className="page themes-page">
       <h1>Themes</h1>
-      <p className="room-tag">Pick a mood and jump straight into a new room with it set.</p>
+      <p className="room-tag">
+        Pick a mood - it's saved for whenever you create a room, nothing happens until then.
+      </p>
       <div className="poster-grid">
         {THEMES.map((t) => (
           <div key={t.id} className="poster-card" data-theme={t.id}>
@@ -19,17 +21,17 @@ export default function ThemesPage({ onSelectTheme }) {
             <span className="poster-tagline">{t.tagline}</span>
             <button
               type="button"
-              className="ticket-button small"
-              onClick={() => {
-                onSelectTheme(t.id);
-                navigate("/create");
-              }}
+              className={`ticket-button small${pendingTheme === t.id ? " active" : ""}`}
+              onClick={() => onSelectTheme(pendingTheme === t.id ? null : t.id)}
             >
-              Select Theme
+              {pendingTheme === t.id ? "Selected ✓" : "Select Theme"}
             </button>
           </div>
         ))}
       </div>
+      <button type="button" className="ticket-button" onClick={() => navigate("/create")}>
+        ★ Create a Room ★
+      </button>
     </div>
   );
 }

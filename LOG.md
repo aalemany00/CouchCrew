@@ -5,6 +5,64 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Watch Together cleanup: dropdown, shorter codes, fixed theme bug, full-time Screen Share
+
+**Who:** Adrian, with Claude Code, on `feature/watch-ui-and-screenshare`
+(branched off `feature/home-join-create-flow`). Touches `VideoPanel.jsx`
+(Job 2, Henry) and `WatchPlayer.jsx` (Job 3, John) - flagged for both to
+review.
+
+**What we fixed/built, from Adrian's own testing feedback:**
+- **Bug fixed:** selecting a theme on the Themes page was force-navigating
+  straight to the Create screen. `ThemesPage.jsx` now just toggles the
+  selection (and previews it on that page's own background) - creating a
+  room is a separate, explicit "Create a Room" button on the same page.
+- **Shorter film-inspired room codes** (`lib/roomCode.js`): swapped the
+  title list for short, mostly single-word titles ("jaws", "her", "heat")
+  instead of long multi-word ones like "mad-max-fury-road".
+- **Archive.org's "Browse" link is now a small popup** (same pattern as
+  the YouTube/Twitch/Kick finders), not a full tab-swap away from the
+  room - and split into separate **Browse Movies** / **Browse Shows**
+  links (`feature_films` / `television` collections) instead of one link
+  to archive.org's generic, everything-mixed-together movies collection
+  page.
+- **Fixed the real bug behind "typing a title doesn't find it":**
+  `parseArchiveIdentifier` was guessing that any single plain word (e.g.
+  "jaws") was probably a literal archive.org identifier and trying to
+  load it directly instead of searching - identifiers are rarely a bare
+  dictionary word. Now only an actual archive.org `/details/<id>` link
+  counts as a direct load; everything else searches. Combined with a new
+  **live search-as-you-type** (debounced ~500ms), you can just type a
+  title and see results without pressing Search at all.
+- **Viewing options are a dropdown now** (`.watch-provider-dropdown`),
+  not a row of buttons sitting out all the time - YouTube, Archive.org,
+  Twitch (live), Kick (live), and now **Screen Share**.
+- **Screen Share promoted to a full-time option, not buried in an
+  already-joined call:** picking it from the dropdown calls a new
+  `shareScreen()` method `VideoPanel.jsx` exposes via `forwardRef` +
+  `useImperativeHandle` (wired through `RoomView.jsx`), which joins the
+  call silently - no mic/camera prompts, matching "usable even if no one
+  is watching" - if nobody's joined yet, then triggers the existing
+  screen-capture flow. `joinCall` now takes optional mic/cam overrides
+  instead of always reading the checkbox state for this. The actual video
+  still renders in the Video & Screen Share panel below (that's where the
+  peer tiles already live); WatchPlayer's side just shows "Sharing your
+  screen — see Video & Screen Share below."
+
+**Verified:** reselecting a theme on the Themes page no longer navigates
+anywhere; a freshly created room got the code "her" (not a multi-word
+string); the dropdown lists all five options and switching between
+YouTube/Archive.org/Screen Share works with no cross-talk; typing "jaws"
+into the Archive.org box with no Search click produced live results;
+selecting Screen Share auto-joined the call with mic and camera both off
+(confirmed via the call's own "Unmute"/"Camera on" button states) without
+ever showing the "Join the call" form. The actual screen-capture picker
+itself couldn't be exercised end-to-end (this session's sandboxed browser
+has no real screen to share), so Henry should double check that part for
+real.
+
+---
+
 ## 2026-11-06 — Reworked Home's create/join flow; film-inspired room codes
 
 **Who:** Adrian, with Claude Code, on `feature/home-join-create-flow`

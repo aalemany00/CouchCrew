@@ -115,8 +115,12 @@ async function resolveArchiveItem(identifier) {
   return body; // { url, title }
 }
 
-// A plain archive.org identifier, or a /details/<identifier> link - anything
-// else is treated as a search query instead.
+// Only a real archive.org /details/<identifier> link counts as a direct
+// load - anything else (including a single plain word that happens to look
+// like it could be an identifier, e.g. "jaws") is always treated as a
+// search query instead. Guessing "that bare word is probably an exact
+// identifier" was the bug behind "just typing a title doesn't find it" -
+// real identifiers are rarely a plain dictionary word anyway.
 function parseArchiveIdentifier(input) {
   const text = input.trim();
   if (!text) return null;
@@ -126,7 +130,7 @@ function parseArchiveIdentifier(input) {
     const match = parsed.pathname.match(/^\/details\/([^/]+)/);
     return match ? match[1] : null;
   } catch {
-    return /^[\w.-]+$/.test(text) ? text : null;
+    return null;
   }
 }
 
@@ -168,6 +172,8 @@ function makeVideoElementPlayer(videoEl) {
     },
   };
 }
+
+const ARCHIVE_SEARCH_DEBOUNCE_MS = 500; // live-search-as-you-type delay
 
 const DRIFT_THRESHOLD = 2; // seconds of drift before a tick corrects a viewer
 const SEEK_THRESHOLD = 1.5; // a jump bigger than this between polls is a seek
@@ -215,14 +221,15 @@ function parseVideoId(input) {
   return null;
 }
 
-export default function WatchPlayer({ roomId, isLeader }) {
+export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
-  const [provider, setProvider] = useState("youtube"); // "youtube" | "twitch" | "kick"
+  const [provider, setProvider] = useState("youtube"); // "youtube" | "archive" | "twitch" | "kick" | "screenshare"
   const [liveChannel, setLiveChannel] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const providerRef = useRef(provider);
   useEffect(() => {
@@ -548,6 +555,29 @@ export default function WatchPlayer({ roomId, isLeader }) {
     }
   }
 
+  // Live search-as-you-type for Archive.org: no need to press Search just
+  // to find out whether a title is there. A real archive.org link still
+  // takes the direct-load path above instead of searching for itself.
+  useEffect(() => {
+    if (provider !== "archive") return;
+    const trimmed = url.trim();
+    if (!trimmed || parseArchiveIdentifier(trimmed)) return;
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchArchiveVideos(trimmed);
+        setSearchResults(results);
+        setError(results.length === 0 ? "No results — try a different search." : "");
+      } catch {
+        // Stay quiet on a live-typing failure - the Search button still
+        // works and shows a real error if pressed.
+      } finally {
+        setSearching(false);
+      }
+    }, ARCHIVE_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [url, provider]);
+
   async function handleLoad(e) {
     e.preventDefault();
     if (!isLeader) return;
@@ -621,6 +651,23 @@ export default function WatchPlayer({ roomId, isLeader }) {
     setProvider(nextProvider);
     setError("");
     setSearchResults(null);
+    setMenuOpen(false);
+  }
+
+  // Screen Share is a "viewing option" like YouTube/Archive.org rather than
+  // something buried inside an already-joined call - picking it broadcasts
+  // to the room (same as loading a video) and triggers VideoPanel's actual
+  // screen-capture via the ref RoomView wires up, joining the call silently
+  // (no mic/cam) first if nobody's done that yet.
+  function handleSelectScreenShare() {
+    setProvider("screenshare");
+    setLiveChannel(null);
+    setHasVideo(true);
+    setError("");
+    setSearchResults(null);
+    setMenuOpen(false);
+    send({ type: "load", provider: "screenshare" });
+    onShareScreen?.();
   }
 
   // None of these services' own sites can be embedded in the room for
@@ -641,40 +688,81 @@ export default function WatchPlayer({ roomId, isLeader }) {
     window.open(target, `couchcrew-${provider}-finder`, "width=480,height=760,noopener,noreferrer");
   }
 
-  const liveConfig = provider !== "youtube" ? LIVE_PROVIDERS[provider] : null;
+  // A small popup, like the other finders above, not a full tab-swap -
+  // separate links for movies vs. TV shows, since archive.org's generic
+  // "movies" collection page mixes in everything (shorts, TV, etc.) above
+  // the fold instead of just what you're looking for.
+  function openArchiveBrowse(kind) {
+    const target =
+      kind === "shows" ? "https://archive.org/details/television" : "https://archive.org/details/feature_films";
+    window.open(target, `couchcrew-archive-${kind}`, "width=480,height=760,noopener,noreferrer");
+  }
+
+  const liveConfig = LIVE_PROVIDERS[provider] || null;
+  const PROVIDER_LABELS = { youtube: "YouTube", archive: "Archive.org", screenshare: "Screen Share" };
+  const currentProviderLabel = liveConfig ? `${liveConfig.label} (live)` : PROVIDER_LABELS[provider] || provider;
 
   return (
     <div className="watch-player">
       <h2>Watch Together</h2>
       {isLeader && (
-        <div className="watch-provider-tabs">
+        <div className="watch-provider-dropdown">
           <button
             type="button"
-            className={`provider-tab${provider === "youtube" ? " active" : ""}`}
-            onClick={() => switchProvider("youtube")}
+            className="provider-dropdown-toggle"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
           >
-            YouTube
+            {currentProviderLabel} <span aria-hidden="true">{menuOpen ? "▲" : "▼"}</span>
           </button>
-          <button
-            type="button"
-            className={`provider-tab${provider === "archive" ? " active" : ""}`}
-            onClick={() => switchProvider("archive")}
-          >
-            Archive.org
-          </button>
-          {Object.entries(LIVE_PROVIDERS).map(([id, cfg]) => (
-            <button
-              key={id}
-              type="button"
-              className={`provider-tab${provider === id ? " active" : ""}`}
-              onClick={() => switchProvider(id)}
-            >
-              {cfg.label} (live)
-            </button>
-          ))}
+          {menuOpen && (
+            <>
+              <div className="dropdown-backdrop" onClick={() => setMenuOpen(false)} />
+              <ul className="provider-dropdown-menu">
+                <li>
+                  <button
+                    type="button"
+                    className={provider === "youtube" ? "active" : ""}
+                    onClick={() => switchProvider("youtube")}
+                  >
+                    YouTube
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    className={provider === "archive" ? "active" : ""}
+                    onClick={() => switchProvider("archive")}
+                  >
+                    Archive.org
+                  </button>
+                </li>
+                {Object.entries(LIVE_PROVIDERS).map(([id, cfg]) => (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      className={provider === id ? "active" : ""}
+                      onClick={() => switchProvider(id)}
+                    >
+                      {cfg.label} (live)
+                    </button>
+                  </li>
+                ))}
+                <li>
+                  <button
+                    type="button"
+                    className={provider === "screenshare" ? "active" : ""}
+                    onClick={handleSelectScreenShare}
+                  >
+                    Screen Share
+                  </button>
+                </li>
+              </ul>
+            </>
+          )}
         </div>
       )}
-      {isLeader ? (
+      {isLeader && provider !== "screenshare" ? (
         <>
           <form className="watch-load" onSubmit={handleLoad}>
             <input
@@ -739,14 +827,14 @@ export default function WatchPlayer({ roomId, isLeader }) {
             </button>
           )}
           {provider === "archive" && (
-            <a
-              className="secondary youtube-finder archive-browse-link"
-              href="https://archive.org/details/movies"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Browse Archive.org ↗
-            </a>
+            <div className="archive-browse-links">
+              <button type="button" className="secondary youtube-finder" onClick={() => openArchiveBrowse("movies")}>
+                Browse Movies ↗
+              </button>
+              <button type="button" className="secondary youtube-finder" onClick={() => openArchiveBrowse("shows")}>
+                Browse Shows ↗
+              </button>
+            </div>
           )}
           {liveConfig && (
             <button type="button" className="secondary youtube-finder" onClick={openLiveFinder}>
@@ -754,6 +842,12 @@ export default function WatchPlayer({ roomId, isLeader }) {
             </button>
           )}
         </>
+      ) : provider === "screenshare" ? (
+        <p className="room-tag">
+          {isLeader
+            ? "Sharing your screen — see Video & Screen Share below."
+            : "The leader is sharing their screen — see Video & Screen Share below."}
+        </p>
       ) : (
         <p className="room-tag">Only the room leader can choose what to play.</p>
       )}

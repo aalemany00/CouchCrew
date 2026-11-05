@@ -4,7 +4,7 @@
 // messages (call:*, rtc:signal) — no third-party video service, no accounts.
 // History: Daily.co (needed a card) -> Jitsi (anonymous rooms got cut off)
 // -> this. See LOG.md.
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 import { getDevicePrefs } from "../lib/devicePrefs";
 
@@ -125,7 +125,11 @@ function Tile({ stream, name, muted = false, mirror = false, videoOn, screen = f
   );
 }
 
-export default function VideoPanel({ roomId }) {
+// forwardRef so WatchPlayer's "Screen Share" option (see RoomView.jsx) can
+// trigger a share directly - including joining the call silently first,
+// with no mic/cam, if nobody's pressed "Join call" yet. Screen sharing
+// shouldn't require turning your own camera/mic on first.
+const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
   const [status, setStatus] = useState("idle"); // idle | joining | joined
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -147,6 +151,16 @@ export default function VideoPanel({ roomId }) {
       endCall(false);
     };
   }, [roomId]);
+
+  // Exposed to WatchPlayer (via RoomView) so "Screen Share" works as a
+  // standalone option there, not just a button buried inside an already-
+  // joined call.
+  useImperativeHandle(ref, () => ({
+    shareScreen: async () => {
+      if (!callRef.current) await joinCall(false, false);
+      await toggleScreen();
+    },
+  }));
 
   function publish() {
     const call = callRef.current;
@@ -353,7 +367,7 @@ export default function VideoPanel({ roomId }) {
     }
   }
 
-  async function joinCall() {
+  async function joinCall(wantMic = startMic, wantCam = startCam) {
     setError("");
     setNotice("");
     if (!socket.connected) {
@@ -363,7 +377,7 @@ export default function VideoPanel({ roomId }) {
     setStatus("joining");
     const [iceServers, { tracks, notes }] = await Promise.all([
       loadIceServers(),
-      getLocalTracks(startMic, startCam),
+      getLocalTracks(wantMic, wantCam),
     ]);
     if (!mountedRef.current) {
       tracks.forEach((t) => t.stop());
@@ -574,4 +588,6 @@ export default function VideoPanel({ roomId }) {
       )}
     </div>
   );
-}
+});
+
+export default VideoPanel;

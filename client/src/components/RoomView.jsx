@@ -28,6 +28,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const amLeader = connected && leaderId === socket.id;
+  const videoPanelRef = useRef(null);
 
   const marqueeClicksRef = useRef([]);
   const toastTimeoutRef = useRef(null);
@@ -279,8 +280,12 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             touching WatchPlayer/VideoPanel's own markup — Henry's upcoming
             WebRTC rebuild of VideoPanel can drop in here unchanged. */}
         <div className="screen-stack">
-          <WatchPlayer roomId={roomId} isLeader={amLeader} />
-          <VideoPanel roomId={roomId} />
+          <WatchPlayer
+            roomId={roomId}
+            isLeader={amLeader}
+            onShareScreen={() => videoPanelRef.current?.shareScreen()}
+          />
+          <VideoPanel ref={videoPanelRef} roomId={roomId} />
         </div>
       </div>
       <ChatPanel roomId={roomId} onFlourish={playFlourish} onToast={showToast} />
