@@ -117,7 +117,9 @@ function App() {
     <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
       <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
       <NavBar currentPage={route.page} />
-      {route.page === "themes" && <ThemesPage onSelectTheme={setPendingTheme} />}
+      {route.page === "themes" && (
+        <ThemesPage pendingTheme={pendingTheme} onSelectTheme={setPendingTheme} />
+      )}
       {route.page === "settings" && <SettingsPage />}
       {route.page === "help" && <HelpPage />}
       {route.page === "home" && <HomePage />}
