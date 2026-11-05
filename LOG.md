@@ -5,6 +5,39 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Combined integration test surfaces an orphaned-timer bug
+
+**Who:** Adrian, with Claude Code. Ran the first real two-person test of
+everything together (chat, video call, YouTube sync, the new room settings
+drawer and floating chat) rather than each piece in isolation.
+
+**What happened:** while both people's tabs reconnected around the same
+time (a dev-server restart mid-test, not a normal user action, but it
+exposed a real bug), a stale "X left the room" message appeared in a
+brand-new room session. Root cause: the Nov 5 reconnect-grace fix (see
+below) deletes a room's `pendingLeaveTimers` map entry once the room empties
+out, but never called `clearTimeout` on the timers inside it first. An
+already-scheduled timer kept running after the delete, fired later, found
+no map entry (harmless on its own), but still went ahead and added its
+"left" message and recreated `roomMessages` for that room id - including
+for a brand-new room someone had since created with the same code.
+
+**Fixed:** `clearTimeout` every pending timer for a room before dropping
+its `pendingLeaveTimers` entry, in the same place the room itself gets torn
+down (`server/index.js`).
+
+**Verified:** joined a room solo, closed the tab (empties the room,
+scheduling a "left" timer), reopened the same room code within the 3s
+grace window (before the fix, this is exactly when the orphaned timer
+would later fire into the new session), waited past the window, and
+confirmed no stray message appeared in the fresh room's chat. Also
+confirmed the rest of the integration (two people, one in a video call
+fallback, synced YouTube playback, opening the settings drawer and
+switching theme mid-playback) still all works together with no console
+errors.
+
+---
+
 ## 2026-11-05 — Room settings drawer, floating chat, profile pics, custom codes
 
 **Who:** Adrian, with Claude Code. Driven by Adrian's own flow/convenience

@@ -249,6 +249,14 @@ io.on("connection", (socket) => {
         roomMessages.delete(joinedRoomId);
         roomLeaders.delete(joinedRoomId);
         roomThemes.delete(joinedRoomId);
+        // Cancel every still-pending "left" timer for this room before
+        // dropping the map - otherwise an orphaned setTimeout fires later,
+        // finds no map entry, and still goes ahead and re-adds a message to
+        // (and recreates roomMessages for) a room that's supposedly gone,
+        // potentially one a brand-new join has since recreated.
+        for (const timer of pendingLeaveTimers.get(joinedRoomId)?.values() || []) {
+          clearTimeout(timer);
+        }
         pendingLeaveTimers.delete(joinedRoomId);
         return;
       }
