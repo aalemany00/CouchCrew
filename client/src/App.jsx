@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import JoinScreen from "./components/JoinScreen";
+import CreateRoomScreen from "./components/CreateRoomScreen";
 import RoomView from "./components/RoomView";
 import NavBar from "./components/NavBar";
 import HomePage from "./components/HomePage";
@@ -39,16 +40,41 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  function handleJoin({ name, roomId }) {
-    const next = { name, roomId };
+  function rememberSession(next) {
     setSession(next);
-    rememberRecentRoom(roomId);
+    rememberRecentRoom(next.roomId);
     try {
       sessionStorage.setItem("couchcrew:session", JSON.stringify(next));
-      localStorage.setItem("couchcrew:name", name);
+      localStorage.setItem("couchcrew:name", next.name);
     } catch {
       // Storage can be unavailable (private browsing, etc.) — the app still
       // works, you just won't get the refresh/rejoin convenience.
+    }
+  }
+
+  // Joining a room someone else already created (a shared link, or Home's
+  // "Join with a code") - the room id is fixed, JoinScreen only asks for a
+  // name.
+  function handleJoin({ name, roomId }) {
+    rememberSession({ name, roomId });
+  }
+
+  // Creating a brand-new room (Home's "Create a Room", or the Themes
+  // gallery's "Select Theme", which sets pendingTheme first) - CreateRoomScreen
+  // collects name + an optional room code together, unlike joining. The code
+  // is sanitized and, if already taken by an active room, auto-suffixed
+  // ("inception" -> "inception-2") rather than silently dropping the
+  // creator into someone else's room; left blank, it's a movie-inspired
+  // generated one instead of random letters/numbers.
+  async function handleCreateRoom({ name, code }) {
+    setCreatingRoom(true);
+    try {
+      const roomId = await claimRoomCode(code);
+      setRoomPath(roomId);
+      setRoute({ page: "room", roomId });
+      rememberSession({ name, roomId });
+    } finally {
+      setCreatingRoom(false);
     }
   }
 
@@ -57,24 +83,6 @@ function App() {
     setPendingTheme(null);
     navigate("/");
     setRoute(getRoute());
-  }
-
-  // Create a brand-new room (from Home's "Create a Room" — optionally with a
-  // custom code — or the Themes gallery's "Select Theme") and navigate
-  // straight to it. `desiredCode` is sanitized and, if already taken by an
-  // active room, auto-suffixed ("movienight" -> "movienight-2") rather than
-  // silently dropping the creator into someone else's room. The actual join
-  // (collecting a name) happens via JoinScreen once we land on /r/<roomId>.
-  async function createRoom(desiredCode, theme) {
-    setCreatingRoom(true);
-    try {
-      const roomId = await claimRoomCode(desiredCode);
-      setPendingTheme(theme || null);
-      setRoomPath(roomId);
-      setRoute({ page: "room", roomId });
-    } finally {
-      setCreatingRoom(false);
-    }
   }
 
   if (route.page === "room") {
@@ -96,14 +104,23 @@ function App() {
     );
   }
 
+  if (route.page === "create") {
+    return (
+      <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
+        <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
+        <CreateRoomScreen onCreate={handleCreateRoom} creating={creatingRoom} />
+      </div>
+    );
+  }
+
   return (
     <div className="cinema-shell" data-theme={pendingTheme || "classic"}>
       <PixelTheaterScenery theme={pendingTheme || "classic"} mode="lobby" />
       <NavBar currentPage={route.page} />
-      {route.page === "themes" && <ThemesPage onCreate={createRoom} />}
+      {route.page === "themes" && <ThemesPage onSelectTheme={setPendingTheme} />}
       {route.page === "settings" && <SettingsPage />}
       {route.page === "help" && <HelpPage />}
-      {route.page === "home" && <HomePage onCreate={createRoom} creating={creatingRoom} />}
+      {route.page === "home" && <HomePage />}
     </div>
   );
 }
