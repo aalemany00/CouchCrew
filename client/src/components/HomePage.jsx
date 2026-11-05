@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { THEMES } from "../lib/theater";
-import { generateRoomCode } from "../lib/roomCode";
 import { navigate } from "../lib/router";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 
-export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
+export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creating }) {
+  const [customCode, setCustomCode] = useState("");
+
   function createRoom() {
-    onCreate(generateRoomCode(), pendingTheme);
+    onCreate(customCode, pendingTheme);
   }
 
   return (
@@ -23,9 +25,17 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate }) {
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
                 <p className="hero-tagline">WATCH TOGETHER. ANYWHERE.</p>
-                <button type="button" className="ticket-button" onClick={createRoom}>
-                  ★ Create a Room ★
+                <button type="button" className="ticket-button" onClick={createRoom} disabled={creating}>
+                  {creating ? "Creating…" : "★ Create a Room ★"}
                 </button>
+                <input
+                  type="text"
+                  className="custom-code-input"
+                  placeholder="Custom room code (optional)"
+                  value={customCode}
+                  onChange={(e) => setCustomCode(e.target.value)}
+                  disabled={creating}
+                />
                 <div className="join-divider">or</div>
                 <button type="button" className="secondary" onClick={() => navigate("/rooms")}>
                   Join with a code

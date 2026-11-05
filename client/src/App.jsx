@@ -8,11 +8,11 @@ import ThemesPage from "./components/ThemesPage";
 import SettingsPage from "./components/SettingsPage";
 import HelpPage from "./components/HelpPage";
 import { getRoute, navigate, setRoomPath } from "./lib/router";
+import { rememberRecentRoom } from "./lib/recentRooms";
+import { claimRoomCode } from "./lib/roomApi";
 import "./App.css";
 import "./immersive-theater.css";
 import PixelTheaterScenery from "./components/PixelTheaterScenery";
-
-const MAX_RECENT_ROOMS = 5;
 
 function getResumedSession(roomId) {
   if (!roomId) return null;
@@ -24,22 +24,13 @@ function getResumedSession(roomId) {
   }
 }
 
-function rememberRecentRoom(roomId) {
-  try {
-    const existing = JSON.parse(localStorage.getItem("couchcrew:recentRooms") || "[]");
-    const next = [roomId, ...existing.filter((id) => id !== roomId)].slice(0, MAX_RECENT_ROOMS);
-    localStorage.setItem("couchcrew:recentRooms", JSON.stringify(next));
-  } catch {
-    // ignore — just a convenience list
-  }
-}
-
 function App() {
   const [route, setRoute] = useState(getRoute);
   const [session, setSession] = useState(() =>
     route.page === "room" ? getResumedSession(route.roomId) : null
   );
   const [pendingTheme, setPendingTheme] = useState(null);
+  const [creatingRoom, setCreatingRoom] = useState(false);
 
   useEffect(() => {
     function handlePopState() {
@@ -69,13 +60,22 @@ function App() {
     setRoute(getRoute());
   }
 
-  // Create a brand-new room (from Home's "Create a Room" or the Themes
-  // gallery's "Select Theme") and navigate straight to it. The actual join
+  // Create a brand-new room (from Home's "Create a Room" — optionally with a
+  // custom code — or the Themes gallery's "Select Theme") and navigate
+  // straight to it. `desiredCode` is sanitized and, if already taken by an
+  // active room, auto-suffixed ("movienight" -> "movienight-2") rather than
+  // silently dropping the creator into someone else's room. The actual join
   // (collecting a name) happens via JoinScreen once we land on /r/<roomId>.
-  function createRoom(roomId, theme) {
-    setPendingTheme(theme || null);
-    setRoomPath(roomId);
-    setRoute({ page: "room", roomId });
+  async function createRoom(desiredCode, theme) {
+    setCreatingRoom(true);
+    try {
+      const roomId = await claimRoomCode(desiredCode);
+      setPendingTheme(theme || null);
+      setRoomPath(roomId);
+      setRoute({ page: "room", roomId });
+    } finally {
+      setCreatingRoom(false);
+    }
   }
 
   if (route.page === "room") {
@@ -110,6 +110,7 @@ function App() {
           pendingTheme={pendingTheme}
           onSelectTheme={setPendingTheme}
           onCreate={createRoom}
+          creating={creatingRoom}
         />
       )}
     </div>

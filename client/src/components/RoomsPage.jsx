@@ -1,23 +1,21 @@
 import { useState } from "react";
 import { navigate } from "../lib/router";
-
-function getRecentRooms() {
-  try {
-    return JSON.parse(localStorage.getItem("couchcrew:recentRooms") || "[]");
-  } catch {
-    return [];
-  }
-}
+import { getRecentRooms, removeRecentRoom } from "../lib/recentRooms";
 
 export default function RoomsPage() {
   const [code, setCode] = useState("");
-  const recentRooms = getRecentRooms();
+  const [recentRooms, setRecentRooms] = useState(getRecentRooms);
 
   function join(e) {
     e.preventDefault();
     const trimmed = code.trim().toLowerCase();
     if (!trimmed) return;
     navigate(`/r/${trimmed}`);
+  }
+
+  function forget(roomId) {
+    removeRecentRoom(roomId);
+    setRecentRooms(getRecentRooms());
   }
 
   return (
@@ -45,6 +43,15 @@ export default function RoomsPage() {
                   onClick={() => navigate(`/r/${roomId}`)}
                 >
                   {roomId}
+                </button>
+                <button
+                  type="button"
+                  className="recent-room-remove"
+                  title={`Remove ${roomId} from recent rooms`}
+                  aria-label={`Remove ${roomId} from recent rooms`}
+                  onClick={() => forget(roomId)}
+                >
+                  ✕
                 </button>
               </li>
             ))}

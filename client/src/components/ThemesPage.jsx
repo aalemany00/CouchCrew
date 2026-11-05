@@ -1,5 +1,4 @@
 import { THEMES } from "../lib/theater";
-import { generateRoomCode } from "../lib/roomCode";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 
 // A dedicated gallery to browse every theme and jump straight into a new
@@ -19,7 +18,7 @@ export default function ThemesPage({ onCreate }) {
             <button
               type="button"
               className="ticket-button small"
-              onClick={() => onCreate(generateRoomCode(), t.id)}
+              onClick={() => onCreate("", t.id)}
             >
               Select Theme
             </button>

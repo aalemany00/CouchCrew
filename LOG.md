@@ -5,6 +5,73 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Room settings drawer, floating chat, profile pics, custom codes
+
+**Who:** Adrian, with Claude Code. Driven by Adrian's own flow/convenience
+audit of the room (see the bug-bash entry below, and the LOG discussion that
+led here): the room header was getting crowded (theme picker, snack bar,
+member list all stacked above the content) and several settings people
+would want (device choice, a profile photo, picking a memorable room code)
+didn't exist yet.
+
+**What we built:**
+- **Room settings drawer** (new `RoomSettingsDrawer.jsx`, opened via a ☰
+  button top-left of the room): people count + member list, video/mic
+  device picker, and profile (name + photo) are open to everyone; theme and
+  "make leader" are leader-only sections, matching the existing
+  leader-gating pattern. Moved the theme picker and leader member-list out
+  of the room header into here.
+- **Floating, collapsible chat** (`ChatPanel.jsx` rewrite): collapses to a
+  small 💬 toggle (bottom-right, with an unread-count badge) and expands
+  into a side panel instead of sitting as a tall box under the watch
+  screen. The snack bar (and its 3-click easter egg) moved into the chat
+  panel too, since snacks are a chat thing now, not a whole-room header
+  fixture — `onFlourish`/`onToast` callbacks passed down from `RoomView` so
+  the egg still triggers the same room-wide flourish/toast.
+- **Profile pictures** (`lib/avatar.js`, new shared `ProfileForm.jsx` used
+  by both the standalone Settings page and the drawer): pick a photo from
+  the file/camera picker (no `capture` attribute, so the browser offers
+  both gallery and camera - forcing one would hide the other), resized
+  client-side to a 128x128 JPEG data URL (a raw phone photo is several MB;
+  far too big to broadcast on every presence update) and stored in
+  `localStorage`. `server/index.js` now carries `avatar` on each member
+  record (capped at `MAX_AVATAR_LENGTH`, silently dropped if over) and a
+  new `profile:update` event lets a name/photo change reach the room
+  immediately instead of only on next rejoin.
+- **Mic/camera device picker** (`lib/devicePrefs.js`,
+  `MediaDeviceSettings.jsx`): lists input devices via
+  `enumerateDevices()` (with a one-time permission-priming button, since
+  labels are blank until a permission's been granted once) and saves the
+  chosen ids to `localStorage`. `VideoPanel.jsx`'s `getLocalTracks` now
+  reads these as `deviceId: {exact}` constraints, falling back to the
+  system default/`facingMode` when unset - closes the "no way to pick a
+  different camera/mic" gap flagged earlier, additive only, flagged for
+  Henry to double check against his WebRTC rebuild.
+- **Delete recent rooms** (`RoomsPage.jsx` + new shared `lib/recentRooms.js`,
+  also used by `App.jsx` instead of its old inline copy): a ✕ next to each
+  recent room removes it from the `localStorage` list.
+- **Custom room codes** (`lib/roomApi.js`, new server endpoint
+  `GET /api/room-exists/:code`): Home's "Create a Room" has an optional
+  custom-code field. The code is sanitized, checked against the server (a
+  room only "exists" while someone's actually in it - there's no separate
+  reservation step), and auto-suffixed (`movienight` -> `movienight-2`,
+  etc.) if already taken, instead of silently dropping the creator into
+  someone else's room.
+
+**Verified:** ran both servers locally and drove it live - opened the
+drawer and confirmed people count/device picker/profile form/leader-only
+theme section all render and the theme change synced to a second tab
+immediately; expanded/collapsed the floating chat and confirmed the snack
+easter egg still fires the room flourish+toast from its new home; removed
+a room from Recent Rooms and confirmed it disappeared; created a room with
+a custom code, then - while a second tab still held that room open -
+created another with the same code and got `movienight-2` back, confirming
+the auto-suffix. Didn't verify: actually uploading a real photo file (this
+session's browser automation can't drive a native file picker), or the
+device picker against a machine with multiple real mics/cameras.
+
+---
+
 ## 2026-11-05 — Bug bash (local, pre-mobile-testing pass)
 
 **Who:** Adrian, with Claude Code. Ran both servers locally and drove two
