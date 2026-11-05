@@ -5,6 +5,33 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Archive.org search: cut the clutter, surface popular results
+
+**Who:** Adrian, with Claude Code, on `feature/archive-search-quality`.
+
+**Why:** searching "jaws" returned a Twitter bot clip, a fire-department
+rescue video, random YouTube reaction videos, and a Funny or Die sketch
+before anything resembling the actual movie - archive.org's generic
+"movies" mediatype includes literally anything anyone's ever uploaded
+labeled as video. Adrian wants strictly real movies/TV, not news, and only
+well-known results, not obscure clutter.
+
+**What changed** (`server/archive.js`): the search query now scopes to
+the real movie/TV collections (`feature_films`, `classic_tv`,
+`television`) instead of the open "movies" mediatype alone, explicitly
+excludes the News & Public Affairs collection, requires at least 500
+downloads (a real popularity floor, not just "exists"), and sorts by
+download count descending so the most-watched match leads.
+
+**Verified:** searching "jaws" now returns exactly 4 results, led by the
+real 1975 film (33k downloads) - no news, no random clips. "nosferatu"
+returns 7 legitimate prints of the actual film, led by a 433k-download
+copy. "inception" (not public domain, correctly) returns nothing rather
+than a pile of irrelevant noise. Confirmed live in the app: typing "jaws"
+in the room's Archive.org search shows only the 4 real results.
+
+---
+
 ## 2026-11-06 — Watch Together cleanup: dropdown, shorter codes, fixed theme bug, full-time Screen Share
 
 **Who:** Adrian, with Claude Code, on `feature/watch-ui-and-screenshare`
