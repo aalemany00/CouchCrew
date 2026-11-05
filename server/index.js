@@ -52,6 +52,14 @@ const roomThemes = new Map();
 // only passes WebRTC setup messages between them (signaling); the audio/video
 // itself flows directly between browsers.
 const roomCalls = new Map();
+// roomId -> Map<name, Timeout>. A disconnect schedules a delayed "left the
+// room" announcement instead of firing it immediately, so a page reload
+// (old socket disconnects, new one reconnects almost instantly) doesn't
+// read as a real leave - see room:join below, which cancels it on a
+// same-name reconnect within the window instead of announcing both a leave
+// and a rejoin for what was really just a blip.
+const pendingLeaveTimers = new Map();
+const RECONNECT_GRACE_MS = 3000;
 const VALID_THEMES = new Set([
   "classic",
   "horror",
@@ -118,6 +126,17 @@ io.on("connection", (socket) => {
       ...roomState(roomId),
     });
     socket.to(roomId).emit("room:presence", roomState(roomId));
+
+    // A reconnect within the grace window (reload, brief network drop) isn't
+    // a real departure - cancel the pending "left" message instead of
+    // announcing a leave and a rejoin for what was really just a blip.
+    const pending = pendingLeaveTimers.get(roomId);
+    if (pending?.has(displayName)) {
+      clearTimeout(pending.get(displayName));
+      pending.delete(displayName);
+      if (pending.size === 0) pendingLeaveTimers.delete(roomId);
+      return;
+    }
 
     const systemMessage = addMessage(roomId, {
       id: `system-${socket.id}-${Date.now()}`,
@@ -203,6 +222,7 @@ io.on("connection", (socket) => {
         roomMessages.delete(joinedRoomId);
         roomLeaders.delete(joinedRoomId);
         roomThemes.delete(joinedRoomId);
+        pendingLeaveTimers.delete(joinedRoomId);
         return;
       }
       // Leadership follows along if the leader leaves, so the room never
@@ -213,13 +233,24 @@ io.on("connection", (socket) => {
     }
 
     socket.to(joinedRoomId).emit("room:presence", roomState(joinedRoomId));
-    const systemMessage = addMessage(joinedRoomId, {
-      id: `system-${socket.id}-${Date.now()}`,
-      system: true,
-      text: `${leavingName} left the room`,
-      at: Date.now(),
-    });
-    socket.to(joinedRoomId).emit("chat:message", systemMessage);
+
+    const roomId = joinedRoomId;
+    const timer = setTimeout(() => {
+      const pending = pendingLeaveTimers.get(roomId);
+      pending?.delete(leavingName);
+      if (pending?.size === 0) pendingLeaveTimers.delete(roomId);
+
+      const systemMessage = addMessage(roomId, {
+        id: `system-${socket.id}-${Date.now()}`,
+        system: true,
+        text: `${leavingName} left the room`,
+        at: Date.now(),
+      });
+      io.to(roomId).emit("chat:message", systemMessage);
+    }, RECONNECT_GRACE_MS);
+
+    if (!pendingLeaveTimers.has(roomId)) pendingLeaveTimers.set(roomId, new Map());
+    pendingLeaveTimers.get(roomId).set(leavingName, timer);
   });
 });
 

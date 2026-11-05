@@ -5,6 +5,70 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Bug bash (local, pre-mobile-testing pass)
+
+**Who:** Adrian, with Claude Code. Ran both servers locally and drove two
+browser tabs as "Adrian" and "Henry" in the same room to check the core
+flows end to end before the Nov 6-7 mobile testing/bug-bash window.
+
+**Checked and working:** room create/join, chat (realtime, both directions),
+leader crown + leader-gated "Watch Together" controls, leader transfer
+("Make leader"), genre theme sync across clients, YouTube load + play/pause
+reaching the other client, mic/camera graceful fallback ("Couldn't use your
+mic or camera (blocked or not found) — you can still watch and listen.")
+when `getUserMedia` is unavailable, mobile viewport (375px) layout for the
+room view (single column, no overflow), and the Home/Rooms/Themes/Settings/
+Help pages (Help's content, Rooms' "recent rooms" from `localStorage`,
+Themes gallery) — no console errors on any of them.
+
+**Bug found:** reloading the room page (a plain refresh, not leaving) makes
+the *reloading user's own tab* show a system chat message saying **they**
+left the room, with no matching "rejoined" message to explain it — even
+though the member list at the top still correctly shows them present.
+
+Root cause (`server/index.js`): a reload creates a new socket that calls
+`room:join` while the old socket's `disconnect` handler is still unwinding.
+The disconnect handler always appends `"${name} left the room"` to the
+room's shared message history and broadcasts it via `socket.to(roomId)` —
+which reaches every *other* socket in the room, including the new socket
+the same person just reconnected with. Their own `room:join` for the
+reconnect never shows them their own "joined" message either (intentional
+— `socket.to(roomId)` also excludes the sender there), so from that user's
+perspective a reload reads as an unexplained, false "you left" notice.
+Other members in the room see a more sensible (if slightly noisy)
+leave-then-rejoin pair.
+
+**Fixed same session.** Added a 3-second reconnect grace period in
+`server/index.js`: a disconnect now schedules the "left the room" message
+with `setTimeout` instead of firing it immediately, tracked in a new
+`pendingLeaveTimers` map (`roomId -> Map<name, Timeout>`). If `room:join`
+sees a same-name reconnect for that room before the timer fires, it clears
+the timer and skips adding a new "joined" message too — a reload reads as
+nothing happening at all, which is the correct UX for a blip. If no
+reconnect comes within the window, the "left" message fires as before, now
+via `io.to(roomId)` since the original author's socket is already gone (no
+longer needs to exclude the sender).
+
+**Verified:** reran the two-tab repro (Adrian + Henry) against the fix —
+reloading Adrian's tab produced no leave message in either tab even after
+waiting past the 3s window, member list stayed correct throughout; closing
+Adrian's tab for real still correctly showed "Adrian left the room" to
+Henry after the grace period and removed Adrian from the member list.
+
+**Also noted, not a bug:** repeated console warnings
+`Failed to execute 'postMessage' on 'DOMWindow': ...youtube.com...` while a
+video is loaded — these come from the YouTube IFrame Player API's own
+internal polling, not CouchCrew's code, and are a known benign noise
+pattern for that embed; not worth chasing.
+
+**Not covered this pass:** real camera/mic/WebRTC call quality (this
+session's browser has no real camera/mic to grant), filling a room to the
+5-person cap to see the "room is full" screen trigger live (re-verified by
+reading `server/index.js` and Henry's `room:size-cap` LOG entry instead),
+and actual cross-device/cross-network mobile testing (needs a real phone).
+
+---
+
 ## 2026-11-04 — Room size cap (5) and a Help page
 
 **Who:** Adrian, with Claude Code, on `feature/room-size-cap-and-help`.
