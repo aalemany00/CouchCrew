@@ -5,6 +5,47 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Reworked Home's create/join flow; film-inspired room codes
+
+**Who:** Adrian, with Claude Code, on `feature/home-join-create-flow`
+(branched off `feature/archive-org-watch-together`).
+
+**What changed, from Adrian's own feedback on the current Home page:**
+- **Join** no longer shows a room-code textbox up front. "Join with a
+  code" is the only control until clicked; clicking it reveals the
+  textbox + a "Join" submit button in its place. Submitting blank shows
+  "Type a room code to join."; submitting a code for a room that isn't
+  currently active (checked via the existing `/api/room-exists`) shows
+  "No room found with that code — double-check it, or ask for a fresh
+  invite link." instead of silently dropping you into a brand-new, empty
+  room under a mistyped code with no indication anything was wrong.
+- **Create** no longer has an inline custom-code field on Home either.
+  "Create a Room" now goes to a new `/create` screen (new
+  `CreateRoomScreen.jsx`) that asks for your name *and* an optional room
+  code together, before the room exists - rather than deciding the code
+  first and asking for a name after landing in it. Leaving the code blank
+  auto-generates one; typing one still gets the existing auto-suffix
+  treatment if it's taken (`"inception"` -> `"inception-2"`).
+- **Auto-generated codes are film titles now** (`lib/roomCode.js`'s
+  `generateRoomCode`), not random letters/numbers - "inception",
+  "the-matrix", "spirited-away", etc. Easier to say out loud and remember
+  than "xk4m9q"; collisions between two rooms wanting the same title are
+  handled by the existing auto-suffix, same as a typed code.
+- The Themes gallery's "Select Theme" now routes through this same
+  `/create` screen (carrying the chosen theme along) instead of skipping
+  straight to a room with only a name prompt, so there's one consistent
+  "create a room" entry point app-wide.
+
+**Verified:** Home shows no textbox until "Join with a code" is clicked,
+which reveals it in place; submitting empty and submitting a made-up code
+each showed the right message; "Create a Room" opens `/create` with name +
+optional-code fields, blank code produced a real film-title room
+(`edge-of-tomorrow`), and a typed code plus a Themes-selected genre
+(Horror) both carried through correctly into the room. No console errors
+in any of the above.
+
+---
+
 ## 2026-11-06 — Archive.org: real synced playback of legal, public-domain films
 
 **Who:** Adrian, with Claude Code, on `feature/archive-org-watch-together`

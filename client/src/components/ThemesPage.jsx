@@ -1,10 +1,12 @@
 import { THEMES } from "../lib/theater";
+import { navigate } from "../lib/router";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 
-// A dedicated gallery to browse every theme and jump straight into a new
-// room with it already set — the Home page's picker is for "pick, then
-// create"; this is "pick and go."
-export default function ThemesPage({ onCreate }) {
+// A gallery to browse every theme and jump straight into creating a new
+// room with it already set - "Select Theme" carries the choice to the
+// Create screen (name + optional room code), same as Home's own
+// "Create a Room" button, just with a theme pre-picked.
+export default function ThemesPage({ onSelectTheme }) {
   return (
     <div className="page themes-page">
       <h1>Themes</h1>
@@ -18,7 +20,10 @@ export default function ThemesPage({ onCreate }) {
             <button
               type="button"
               className="ticket-button small"
-              onClick={() => onCreate("", t.id)}
+              onClick={() => {
+                onSelectTheme(t.id);
+                navigate("/create");
+              }}
             >
               Select Theme
             </button>

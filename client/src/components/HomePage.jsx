@@ -1,22 +1,34 @@
 import { useState } from "react";
 import { navigate } from "../lib/router";
+import { checkRoomExists } from "../lib/roomApi";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
 
-// Theme picking lives only on the Themes tab now - Home is just "create" or
-// "join." A new room always starts Classic; pick a theme on its own page,
-// either before creating a room there or from inside the room's settings.
-export default function HomePage({ onCreate, creating }) {
-  const [customCode, setCustomCode] = useState("");
+// Theme picking lives only on the Themes tab; the room code (optional) is
+// asked for on the Create screen along with your name, not here - see
+// CreateRoomScreen.jsx. This page is just "create" or "join."
+export default function HomePage() {
+  const [joinOpen, setJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  function createRoom() {
-    onCreate(customCode, null);
-  }
-
-  function joinRoom(e) {
+  async function handleJoinSubmit(e) {
     e.preventDefault();
     const trimmed = joinCode.trim().toLowerCase();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setJoinError("Type a room code to join.");
+      return;
+    }
+    setJoinError("");
+    setChecking(true);
+    const exists = await checkRoomExists(trimmed);
+    setChecking(false);
+    // `null` means the existence check itself failed (server unreachable) -
+    // don't block joining over that, just let the attempt through.
+    if (exists === false) {
+      setJoinError("No room found with that code — double-check it, or ask for a fresh invite link.");
+      return;
+    }
     navigate(`/r/${trimmed}`);
   }
 
@@ -34,29 +46,30 @@ export default function HomePage({ onCreate, creating }) {
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
                 <p className="hero-tagline">WATCH TOGETHER. ANYWHERE.</p>
-                <button type="button" className="ticket-button" onClick={createRoom} disabled={creating}>
-                  {creating ? "Creating…" : "★ Create a Room ★"}
+                <button type="button" className="ticket-button" onClick={() => navigate("/create")}>
+                  ★ Create a Room ★
                 </button>
-                <input
-                  type="text"
-                  className="custom-code-input"
-                  placeholder="Custom room code (optional)"
-                  value={customCode}
-                  onChange={(e) => setCustomCode(e.target.value)}
-                  disabled={creating}
-                />
                 <div className="join-divider">or</div>
-                <form className="join-code-form" onSubmit={joinRoom}>
-                  <input
-                    type="text"
-                    placeholder="Room code (from a link a friend sent you)"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
-                  />
-                  <button type="submit" className="secondary">
-                    Join
+                {!joinOpen ? (
+                  <button type="button" className="secondary" onClick={() => setJoinOpen(true)}>
+                    Join with a code
                   </button>
-                </form>
+                ) : (
+                  <form className="join-code-form" onSubmit={handleJoinSubmit}>
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Room code (from a link a friend sent you)"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value)}
+                      disabled={checking}
+                    />
+                    <button type="submit" disabled={checking}>
+                      {checking ? "Checking…" : "Join"}
+                    </button>
+                  </form>
+                )}
+                {joinError && <p className="watch-error">{joinError}</p>}
               </div>
             </div>
             <PopcornAndReel />
