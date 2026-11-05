@@ -898,6 +898,7 @@ button.secondary.leave {
 
 /* ===== Nav bar (Home/Rooms/Themes/Settings) ===== */
 .nav-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -958,6 +959,32 @@ button.secondary.leave {
 
 .nav-icon-button {
   cursor: pointer;
+}
+
+/* ===== Nav bar mic/camera quick-settings popover ===== */
+.nav-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+}
+
+.nav-device-popover {
+  position: absolute;
+  top: 100%;
+  right: 1.5rem;
+  margin-top: 0.5rem;
+  width: min(300px, calc(100vw - 2rem));
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+  z-index: 45;
+}
+
+.nav-device-popover .drawer-header h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 /* ===== Home page hero (drive-in marquee screen) ===== */

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { navigate } from "../lib/router";
+import MediaDeviceSettings from "./MediaDeviceSettings";
 
 const NAV_LINKS = [
   { page: "home", path: "/", label: "Home" },
@@ -9,6 +11,8 @@ const NAV_LINKS = [
 ];
 
 export default function NavBar({ currentPage }) {
+  const [devicePanelOpen, setDevicePanelOpen] = useState(false);
+
   return (
     <>
       <nav className="nav-bar">
@@ -28,14 +32,24 @@ export default function NavBar({ currentPage }) {
           ))}
         </div>
         <div className="nav-icons">
-          {/* Decorative — mic/camera only ever mean something inside an
-              actual room's call. The profile icon is a real shortcut. */}
-          <span className="nav-icon" aria-hidden="true">
+          {/* Lets someone check/pick their mic and camera before ever
+              joining a room, not just from inside one's settings drawer. */}
+          <button
+            type="button"
+            className="nav-icon nav-icon-button"
+            onClick={() => setDevicePanelOpen((v) => !v)}
+            aria-label="Mic and camera settings"
+          >
             🎙️
-          </span>
-          <span className="nav-icon" aria-hidden="true">
+          </button>
+          <button
+            type="button"
+            className="nav-icon nav-icon-button"
+            onClick={() => setDevicePanelOpen((v) => !v)}
+            aria-label="Mic and camera settings"
+          >
             🎥
-          </span>
+          </button>
           <button
             type="button"
             className="nav-icon nav-icon-button"
@@ -45,6 +59,26 @@ export default function NavBar({ currentPage }) {
             👤
           </button>
         </div>
+
+        {devicePanelOpen && (
+          <>
+            <div className="nav-popover-backdrop" onClick={() => setDevicePanelOpen(false)} />
+            <div className="nav-device-popover" role="dialog" aria-label="Mic and camera settings">
+              <div className="drawer-header">
+                <h3>Video &amp; Mic</h3>
+                <button
+                  type="button"
+                  className="drawer-close"
+                  onClick={() => setDevicePanelOpen(false)}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+              <MediaDeviceSettings />
+            </div>
+          </>
+        )}
       </nav>
       <div className="nav-glow-line" aria-hidden="true" />
     </>

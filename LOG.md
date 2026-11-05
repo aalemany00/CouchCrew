@@ -5,6 +5,24 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Mic/camera settings reachable from the nav bar, not just a room
+
+**Who:** Adrian, with Claude Code. The 🎙️/🎥 icons in the top-right of the
+nav bar (visible on Home and every other page outside a room) were purely
+decorative until now - clicking them did nothing.
+
+**What we built:** clicking either icon opens a small popover under them
+with the same `MediaDeviceSettings` picker the room settings drawer uses -
+so someone can check/pick their mic and camera before ever creating or
+joining a room, not only from inside one. Click-away (or the ✕) closes it.
+`NavBar.jsx` now reuses `MediaDeviceSettings` rather than duplicating it.
+
+**Verified:** opened the popover from Home and from the Rooms page,
+confirmed it shows the same microphone/camera dropdowns as the room
+drawer, and that clicking outside it closes it. No console errors.
+
+---
+
 ## 2026-11-05 — Combined integration test surfaces an orphaned-timer bug
 
 **Who:** Adrian, with Claude Code. Ran the first real two-person test of
