@@ -5,6 +5,42 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — First-visit room tips and leader-set room name (Henry, touches Job 1's files)
+
+**Who:** Henry, with Claude Code, on `feature/room-hint-rename`. These are
+Adrian's files (rooms/onboarding), so the PR flags them for his review.
+
+**What we built:**
+- **"What do I do first" tips:** a dismissible panel at the top of a room with
+  three steps (copy the invite link, press Join call, leader picks a video),
+  worded differently for the leader and everyone else. "Got it" remembers the
+  dismissal in this browser; a new **?** button in the room header brings it
+  back. New `RoomTips.jsx` + `lib/tips.js`, small hooks in `RoomView.jsx`.
+- **Invite section in ☰ Room Settings:** shows the room code and a copy-link
+  button, so the link can be re-copied from the settings menu as well as the
+  header button (which already existed).
+- **Room name:** the leader can give the room a display name from ☰ Room
+  Settings. It shows as the page title with "Room code: ..." underneath. The
+  link/code never changes, so existing invites keep working. New `room:rename`
+  server event (leader only, trimmed, 40 characters, empty clears it), sent to
+  everyone with the other room state, and cleared when the room empties.
+
+**Decision:** "rename" means a display name, not changing the code. Changing
+the code would break every link already shared and would need the server to
+move a live room, which isn't worth the risk days before the deadline.
+
+**Tested:** two browser tabs against a local server. Tips show the right text
+for leader vs non-leader, dismiss and reopen work. A leader rename reaches the
+other tab; the non-leader's settings have no rename box. Direct socket test:
+a non-leader's rename is ignored, an 80-character name is cut to 40, and a
+blank name clears it.
+
+**Not yet checked:** the tips panel and the new settings section on a phone
+screen, and across a server restart (names live in memory like the theme, so
+they reset when the room empties or the server restarts).
+
+---
+
 ## 2026-11-05 — Theme/About cleanup, user bios, drop the Rooms tab
 
 **Who:** Adrian, with Claude Code, on `feature/profile-bio-and-home-cleanup`

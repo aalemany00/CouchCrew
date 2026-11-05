@@ -1537,3 +1537,48 @@ button.secondary.leave {
     width: 100%;
   }
 }
+
+/* First-visit tips + room name (rooms/onboarding) */
+.room-tips {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--accent, #5865f2);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+.room-tips h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+}
+
+.room-tips ol {
+  margin: 0 0 0.6rem;
+  padding-left: 1.2rem;
+}
+
+.room-tips li {
+  margin: 0.2rem 0;
+}
+
+.room-code-line {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.room-name-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.room-name-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #3a3d4d;
+  background: #1c1f2b;
+  color: inherit;
+}

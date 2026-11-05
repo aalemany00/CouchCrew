@@ -14,13 +14,22 @@ export default function RoomSettingsDrawer({
   leaderId,
   amLeader,
   theme,
+  roomId,
+  title,
+  onRename,
+  onCopyLink,
+  linkCopied,
   onSetTheme,
   onTransferLeader,
   onProfileSave,
 }) {
   const [viewingMember, setViewingMember] = useState(null);
 
+  // What the leader is typing for the room name; null means "show the saved
+  // name" (so a rename from elsewhere still shows up).
+  const [draft, setDraft] = useState(null);
   if (!open) return null;
+  const nameValue = draft ?? title;
 
   return (
     <>
@@ -49,6 +58,44 @@ export default function RoomSettingsDrawer({
             ))}
           </ul>
         </section>
+
+        <section className="drawer-section">
+          <h3>Invite</h3>
+          <p className="room-tag">
+            Room code: <strong>{roomId}</strong>
+          </p>
+          <button type="button" className="secondary" onClick={onCopyLink}>
+            {linkCopied ? "Link copied!" : "Copy invite link"}
+          </button>
+        </section>
+
+        {amLeader && (
+          <section className="drawer-section">
+            <h3>Room name (leader only)</h3>
+            <form
+              className="room-name-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onRename(nameValue);
+                setDraft(null);
+              }}
+            >
+              <input
+                type="text"
+                value={nameValue}
+                maxLength={40}
+                placeholder="e.g. Friday movie night"
+                aria-label="Room name"
+                onChange={(e) => setDraft(e.target.value)}
+              />
+              <button type="submit">Save</button>
+            </form>
+            <p className="room-tag">
+              Shown at the top of the room for everyone. The link and code stay the same. Leave
+              it empty to show the code.
+            </p>
+          </section>
+        )}
 
         <section className="drawer-section">
           <h3>Video &amp; Mic</h3>

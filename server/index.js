@@ -63,6 +63,10 @@ const roomLeaders = new Map();
 // roomId -> genre theme string. Leader-controlled, like the sync-event
 // controls; "classic" (the base drive-in look) until the leader changes it.
 const roomThemes = new Map();
+// roomId -> optional display name for the room, set by the leader (the room
+// code in the link never changes). Empty/unset means "just show the code".
+const roomTitles = new Map();
+const MAX_ROOM_TITLE_LENGTH = 40;
 // roomId -> Set<socketId> of people currently in the video call. Our server
 // only passes WebRTC setup messages between them (signaling); the audio/video
 // itself flows directly between browsers.
@@ -97,6 +101,7 @@ function roomState(roomId) {
     members: getRoomMembers(roomId),
     leaderId: roomLeaders.get(roomId) || null,
     theme: roomThemes.get(roomId) || "classic",
+    title: roomTitles.get(roomId) || "",
   };
 }
 
@@ -222,6 +227,17 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("room:presence", roomState(roomId));
   });
 
+  // Only the current leader can give the room a display name. Names are
+  // plain text, trimmed and length-capped; an empty one clears it.
+  socket.on("room:rename", ({ roomId, title }) => {
+    if (!roomId || typeof title !== "string") return;
+    if (roomLeaders.get(roomId) !== socket.id) return;
+    const clean = title.replace(/\s+/g, " ").trim().slice(0, MAX_ROOM_TITLE_LENGTH);
+    if (clean) roomTitles.set(roomId, clean);
+    else roomTitles.delete(roomId);
+    io.to(roomId).emit("room:presence", roomState(roomId));
+  });
+
   // Join the room's video call: the joiner gets the list of people already in
   // it and starts a connection to each; they are told about the joiner.
   socket.on("call:join", ({ roomId }) => {
@@ -260,6 +276,7 @@ io.on("connection", (socket) => {
         roomMessages.delete(joinedRoomId);
         roomLeaders.delete(joinedRoomId);
         roomThemes.delete(joinedRoomId);
+        roomTitles.delete(joinedRoomId);
         // Cancel every still-pending "left" timer for this room before
         // dropping the map - otherwise an orphaned setTimeout fires later,
         // finds no map entry, and still goes ahead and re-adds a message to
