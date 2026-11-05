@@ -5,6 +5,53 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Theme/About cleanup, user bios, drop the Rooms tab
+
+**Who:** Adrian, with Claude Code, on `feature/profile-bio-and-home-cleanup`
+(branched off `fix/room-reload-false-leave`, not `main` — the files this
+touches, like `ProfileForm.jsx` and `RoomSettingsDrawer.jsx`, only exist on
+that still-unmerged branch).
+
+**What we built:**
+- **Theme picking is Themes-only now.** Removed the "Choose a theme"
+  gallery from `HomePage.jsx` — a new room from Home always starts Classic;
+  pick a theme on its own tab, or change it later from a room's own
+  settings drawer. Dropped the now-unused `pendingTheme`/`onSelectTheme`
+  wiring between `App.jsx` and `HomePage.jsx`.
+- **"About CouchCrew" moved from Settings to Help** (`HelpPage.jsx`) —
+  Settings is now just your profile, not app info.
+- **Bios.** `ProfileForm.jsx` has a 160-char bio field alongside name/photo,
+  saved to `localStorage` (`couchcrew:bio`, new `lib/profile.js`) and sent
+  to the server on `room:join`/`profile:update` (`server/index.js` now
+  carries `bio` on each member record, same length-capped pattern as
+  `avatar`).
+- **Tap a name or photo to see someone's profile.** New shared
+  `MemberProfileCard.jsx` (avatar, name, bio) opens from two places: a
+  member's name in the settings drawer's People list (live data from
+  `members`), and an avatar/name in chat. Chat messages now carry a
+  snapshot of the sender's `avatar`/`bio` taken at send time (like most
+  chat apps) rather than a live lookup, so it still works for someone who's
+  since left the room and doesn't retroactively change if they edit their
+  profile later.
+- **Dropped the Rooms tab.** Its join-by-code form moved onto Home itself
+  (you can create *or* join right from the hero), `RoomsPage.jsx` deleted,
+  nav link removed, `/rooms` route removed from `router.js` (an old link to
+  it now just lands on Home instead of erroring).
+- **Recent rooms moved into Settings**, near the top, collapsed by default
+  (`<details>`-style toggle) so it doesn't take up space when you don't
+  need it — same `lib/recentRooms.js` as before, just relocated from the
+  deleted Rooms page.
+
+**Verified:** built (`npm run build`) and ran it live — Home has no theme
+gallery and its join form works, Help shows the About text, Settings shows
+a collapsed "Recent rooms" that expands on click with no rooms yet, saved
+a name+bio and confirmed it's pre-filled next time, joined a room and
+confirmed the People list and a chat message's avatar both open the same
+profile card with the saved bio, and Themes still creates a themed room
+normally. No console errors.
+
+---
+
 ## 2026-11-05 — Mic/camera settings reachable from the nav bar, not just a room
 
 **Who:** Adrian, with Claude Code. The 🎙️/🎥 icons in the top-right of the

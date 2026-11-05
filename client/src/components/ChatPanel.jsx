@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 import { SNACKS } from "../lib/theater";
+import MemberProfileCard from "./MemberProfileCard";
 
 const SNACK_CLICKS_TO_POP = 3;
 const SNACK_CLICK_WINDOW_MS = 1200;
@@ -19,6 +20,7 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [viewingSender, setViewingSender] = useState(null);
   const logRef = useRef(null);
   const openRef = useRef(open);
   const snackClicksRef = useRef({});
@@ -112,12 +114,23 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
 
           <ul className="chat-log" ref={logRef}>
             {messages.map((m, i) => (
-              <li key={m.id || i} className={m.system ? "system" : undefined}>
+              <li key={m.id || i} className={m.system ? "system" : "chat-message"}>
                 {m.system ? (
                   m.text
                 ) : (
                   <>
-                    <strong>{m.name}:</strong> {m.text}
+                    <button
+                      type="button"
+                      className="avatar-preview chat-avatar-button"
+                      onClick={() => setViewingSender(m)}
+                      aria-label={`${m.name}'s profile`}
+                    >
+                      {m.avatar ? <img src={m.avatar} alt="" /> : (m.name?.trim()[0] || "?").toUpperCase()}
+                    </button>
+                    <button type="button" className="chat-sender-name" onClick={() => setViewingSender(m)}>
+                      {m.name}
+                    </button>
+                    <span>: {m.text}</span>
                     <span className="chat-time">{formatTime(m.at)}</span>
                   </>
                 )}
@@ -135,6 +148,15 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
           </form>
         </div>
       </div>
+
+      {viewingSender && (
+        <MemberProfileCard
+          name={viewingSender.name}
+          avatar={viewingSender.avatar}
+          bio={viewingSender.bio}
+          onClose={() => setViewingSender(null)}
+        />
+      )}
     </>
   );
 }

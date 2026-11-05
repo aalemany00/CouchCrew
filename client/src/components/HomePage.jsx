@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { THEMES } from "../lib/theater";
 import { navigate } from "../lib/router";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
-import PixelTheaterScenery from "./PixelTheaterScenery";
 
-export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creating }) {
+// Theme picking lives only on the Themes tab now - Home is just "create" or
+// "join." A new room always starts Classic; pick a theme on its own page,
+// either before creating a room there or from inside the room's settings.
+export default function HomePage({ onCreate, creating }) {
   const [customCode, setCustomCode] = useState("");
+  const [joinCode, setJoinCode] = useState("");
 
   function createRoom() {
-    onCreate(customCode, pendingTheme);
+    onCreate(customCode, null);
+  }
+
+  function joinRoom(e) {
+    e.preventDefault();
+    const trimmed = joinCode.trim().toLowerCase();
+    if (!trimmed) return;
+    navigate(`/r/${trimmed}`);
   }
 
   return (
@@ -20,7 +29,7 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creati
         <div className="hero-main">
           <div className="hero-screen-wrap">
             <div className="hero-screen">
-              {!pendingTheme || pendingTheme === "classic" ? <ScreenBackdrop /> : <div className="genre-screen-backdrop" aria-hidden="true" />}
+              <ScreenBackdrop />
               <div className="hero-screen-content">
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
@@ -37,41 +46,25 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creati
                   disabled={creating}
                 />
                 <div className="join-divider">or</div>
-                <button type="button" className="secondary" onClick={() => navigate("/rooms")}>
-                  Join with a code
-                </button>
+                <form className="join-code-form" onSubmit={joinRoom}>
+                  <input
+                    type="text"
+                    placeholder="Room code (from a link a friend sent you)"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                  />
+                  <button type="submit" className="secondary">
+                    Join
+                  </button>
+                </form>
               </div>
             </div>
-            {(!pendingTheme || pendingTheme === "classic") && <PopcornAndReel />}
+            <PopcornAndReel />
           </div>
         </div>
       </div>
 
       <SeatsRow />
-
-      <section className="theme-gallery">
-        <h2 className="divider-heading">
-          <span>Choose a theme</span>
-        </h2>
-        <p className="room-tag">
-          Pick the mood for your room — you can always change it once you're in.
-        </p>
-        <div className="poster-grid">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`poster-card${pendingTheme === t.id ? " active" : ""}`}
-              data-theme={t.id}
-              onClick={() => onSelectTheme(pendingTheme === t.id ? null : t.id)}
-            >
-              <span className="pixel-poster-art"><PixelTheaterScenery theme={t.id} mode="poster" /></span>
-              <span className="poster-label">{t.label}</span>
-              <span className="poster-tagline">{t.tagline}</span>
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

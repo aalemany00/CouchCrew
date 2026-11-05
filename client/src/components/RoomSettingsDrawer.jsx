@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { THEMES } from "../lib/theater";
 import ProfileForm from "./ProfileForm";
 import MediaDeviceSettings from "./MediaDeviceSettings";
+import MemberProfileCard from "./MemberProfileCard";
 
 // The room's ☰ menu: people count and video/mic/profile settings are open
 // to everyone; changing the theme or who leads the room is leader-only —
@@ -16,6 +18,8 @@ export default function RoomSettingsDrawer({
   onTransferLeader,
   onProfileSave,
 }) {
+  const [viewingMember, setViewingMember] = useState(null);
+
   if (!open) return null;
 
   return (
@@ -37,7 +41,10 @@ export default function RoomSettingsDrawer({
           <ul className="member-list">
             {members.map((m) => (
               <li key={m.id} className={m.id === leaderId ? "leader" : undefined}>
-                {m.id === leaderId && <span title="Room leader">👑</span>} {m.name}
+                {m.id === leaderId && <span title="Room leader">👑</span>}{" "}
+                <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
+                  {m.name}
+                </button>
               </li>
             ))}
           </ul>
@@ -79,7 +86,9 @@ export default function RoomSettingsDrawer({
                 .filter((m) => m.id !== leaderId)
                 .map((m) => (
                   <li key={m.id}>
-                    {m.name}
+                    <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
+                      {m.name}
+                    </button>
                     <button type="button" className="make-leader" onClick={() => onTransferLeader(m.id)}>
                       Make leader
                     </button>
@@ -89,6 +98,15 @@ export default function RoomSettingsDrawer({
           </section>
         )}
       </aside>
+
+      {viewingMember && (
+        <MemberProfileCard
+          name={viewingMember.name}
+          avatar={viewingMember.avatar}
+          bio={viewingMember.bio}
+          onClose={() => setViewingMember(null)}
+        />
+      )}
     </>
   );
 }

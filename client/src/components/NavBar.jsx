@@ -4,7 +4,6 @@ import MediaDeviceSettings from "./MediaDeviceSettings";
 
 const NAV_LINKS = [
   { page: "home", path: "/", label: "Home" },
-  { page: "rooms", path: "/rooms", label: "Rooms" },
   { page: "themes", path: "/themes", label: "Themes" },
   { page: "settings", path: "/settings", label: "Settings" },
   { page: "help", path: "/help", label: "Help" },
