@@ -5,6 +5,170 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-05 — Combined integration test surfaces an orphaned-timer bug
+
+**Who:** Adrian, with Claude Code. Ran the first real two-person test of
+everything together (chat, video call, YouTube sync, the new room settings
+drawer and floating chat) rather than each piece in isolation.
+
+**What happened:** while both people's tabs reconnected around the same
+time (a dev-server restart mid-test, not a normal user action, but it
+exposed a real bug), a stale "X left the room" message appeared in a
+brand-new room session. Root cause: the Nov 5 reconnect-grace fix (see
+below) deletes a room's `pendingLeaveTimers` map entry once the room empties
+out, but never called `clearTimeout` on the timers inside it first. An
+already-scheduled timer kept running after the delete, fired later, found
+no map entry (harmless on its own), but still went ahead and added its
+"left" message and recreated `roomMessages` for that room id - including
+for a brand-new room someone had since created with the same code.
+
+**Fixed:** `clearTimeout` every pending timer for a room before dropping
+its `pendingLeaveTimers` entry, in the same place the room itself gets torn
+down (`server/index.js`).
+
+**Verified:** joined a room solo, closed the tab (empties the room,
+scheduling a "left" timer), reopened the same room code within the 3s
+grace window (before the fix, this is exactly when the orphaned timer
+would later fire into the new session), waited past the window, and
+confirmed no stray message appeared in the fresh room's chat. Also
+confirmed the rest of the integration (two people, one in a video call
+fallback, synced YouTube playback, opening the settings drawer and
+switching theme mid-playback) still all works together with no console
+errors.
+
+---
+
+## 2026-11-05 — Room settings drawer, floating chat, profile pics, custom codes
+
+**Who:** Adrian, with Claude Code. Driven by Adrian's own flow/convenience
+audit of the room (see the bug-bash entry below, and the LOG discussion that
+led here): the room header was getting crowded (theme picker, snack bar,
+member list all stacked above the content) and several settings people
+would want (device choice, a profile photo, picking a memorable room code)
+didn't exist yet.
+
+**What we built:**
+- **Room settings drawer** (new `RoomSettingsDrawer.jsx`, opened via a ☰
+  button top-left of the room): people count + member list, video/mic
+  device picker, and profile (name + photo) are open to everyone; theme and
+  "make leader" are leader-only sections, matching the existing
+  leader-gating pattern. Moved the theme picker and leader member-list out
+  of the room header into here.
+- **Floating, collapsible chat** (`ChatPanel.jsx` rewrite): collapses to a
+  small 💬 toggle (bottom-right, with an unread-count badge) and expands
+  into a side panel instead of sitting as a tall box under the watch
+  screen. The snack bar (and its 3-click easter egg) moved into the chat
+  panel too, since snacks are a chat thing now, not a whole-room header
+  fixture — `onFlourish`/`onToast` callbacks passed down from `RoomView` so
+  the egg still triggers the same room-wide flourish/toast.
+- **Profile pictures** (`lib/avatar.js`, new shared `ProfileForm.jsx` used
+  by both the standalone Settings page and the drawer): pick a photo from
+  the file/camera picker (no `capture` attribute, so the browser offers
+  both gallery and camera - forcing one would hide the other), resized
+  client-side to a 128x128 JPEG data URL (a raw phone photo is several MB;
+  far too big to broadcast on every presence update) and stored in
+  `localStorage`. `server/index.js` now carries `avatar` on each member
+  record (capped at `MAX_AVATAR_LENGTH`, silently dropped if over) and a
+  new `profile:update` event lets a name/photo change reach the room
+  immediately instead of only on next rejoin.
+- **Mic/camera device picker** (`lib/devicePrefs.js`,
+  `MediaDeviceSettings.jsx`): lists input devices via
+  `enumerateDevices()` (with a one-time permission-priming button, since
+  labels are blank until a permission's been granted once) and saves the
+  chosen ids to `localStorage`. `VideoPanel.jsx`'s `getLocalTracks` now
+  reads these as `deviceId: {exact}` constraints, falling back to the
+  system default/`facingMode` when unset - closes the "no way to pick a
+  different camera/mic" gap flagged earlier, additive only, flagged for
+  Henry to double check against his WebRTC rebuild.
+- **Delete recent rooms** (`RoomsPage.jsx` + new shared `lib/recentRooms.js`,
+  also used by `App.jsx` instead of its old inline copy): a ✕ next to each
+  recent room removes it from the `localStorage` list.
+- **Custom room codes** (`lib/roomApi.js`, new server endpoint
+  `GET /api/room-exists/:code`): Home's "Create a Room" has an optional
+  custom-code field. The code is sanitized, checked against the server (a
+  room only "exists" while someone's actually in it - there's no separate
+  reservation step), and auto-suffixed (`movienight` -> `movienight-2`,
+  etc.) if already taken, instead of silently dropping the creator into
+  someone else's room.
+
+**Verified:** ran both servers locally and drove it live - opened the
+drawer and confirmed people count/device picker/profile form/leader-only
+theme section all render and the theme change synced to a second tab
+immediately; expanded/collapsed the floating chat and confirmed the snack
+easter egg still fires the room flourish+toast from its new home; removed
+a room from Recent Rooms and confirmed it disappeared; created a room with
+a custom code, then - while a second tab still held that room open -
+created another with the same code and got `movienight-2` back, confirming
+the auto-suffix. Didn't verify: actually uploading a real photo file (this
+session's browser automation can't drive a native file picker), or the
+device picker against a machine with multiple real mics/cameras.
+
+---
+
+## 2026-11-05 — Bug bash (local, pre-mobile-testing pass)
+
+**Who:** Adrian, with Claude Code. Ran both servers locally and drove two
+browser tabs as "Adrian" and "Henry" in the same room to check the core
+flows end to end before the Nov 6-7 mobile testing/bug-bash window.
+
+**Checked and working:** room create/join, chat (realtime, both directions),
+leader crown + leader-gated "Watch Together" controls, leader transfer
+("Make leader"), genre theme sync across clients, YouTube load + play/pause
+reaching the other client, mic/camera graceful fallback ("Couldn't use your
+mic or camera (blocked or not found) — you can still watch and listen.")
+when `getUserMedia` is unavailable, mobile viewport (375px) layout for the
+room view (single column, no overflow), and the Home/Rooms/Themes/Settings/
+Help pages (Help's content, Rooms' "recent rooms" from `localStorage`,
+Themes gallery) — no console errors on any of them.
+
+**Bug found:** reloading the room page (a plain refresh, not leaving) makes
+the *reloading user's own tab* show a system chat message saying **they**
+left the room, with no matching "rejoined" message to explain it — even
+though the member list at the top still correctly shows them present.
+
+Root cause (`server/index.js`): a reload creates a new socket that calls
+`room:join` while the old socket's `disconnect` handler is still unwinding.
+The disconnect handler always appends `"${name} left the room"` to the
+room's shared message history and broadcasts it via `socket.to(roomId)` —
+which reaches every *other* socket in the room, including the new socket
+the same person just reconnected with. Their own `room:join` for the
+reconnect never shows them their own "joined" message either (intentional
+— `socket.to(roomId)` also excludes the sender there), so from that user's
+perspective a reload reads as an unexplained, false "you left" notice.
+Other members in the room see a more sensible (if slightly noisy)
+leave-then-rejoin pair.
+
+**Fixed same session.** Added a 3-second reconnect grace period in
+`server/index.js`: a disconnect now schedules the "left the room" message
+with `setTimeout` instead of firing it immediately, tracked in a new
+`pendingLeaveTimers` map (`roomId -> Map<name, Timeout>`). If `room:join`
+sees a same-name reconnect for that room before the timer fires, it clears
+the timer and skips adding a new "joined" message too — a reload reads as
+nothing happening at all, which is the correct UX for a blip. If no
+reconnect comes within the window, the "left" message fires as before, now
+via `io.to(roomId)` since the original author's socket is already gone (no
+longer needs to exclude the sender).
+
+**Verified:** reran the two-tab repro (Adrian + Henry) against the fix —
+reloading Adrian's tab produced no leave message in either tab even after
+waiting past the 3s window, member list stayed correct throughout; closing
+Adrian's tab for real still correctly showed "Adrian left the room" to
+Henry after the grace period and removed Adrian from the member list.
+
+**Also noted, not a bug:** repeated console warnings
+`Failed to execute 'postMessage' on 'DOMWindow': ...youtube.com...` while a
+video is loaded — these come from the YouTube IFrame Player API's own
+internal polling, not CouchCrew's code, and are a known benign noise
+pattern for that embed; not worth chasing.
+
+**Not covered this pass:** real camera/mic/WebRTC call quality (this
+session's browser has no real camera/mic to grant), filling a room to the
+5-person cap to see the "room is full" screen trigger live (re-verified by
+reading `server/index.js` and Henry's `room:size-cap` LOG entry instead),
+and actual cross-device/cross-network mobile testing (needs a real phone).
+
+---
+
 ## 2026-11-04 — Room size cap (5) and a Help page
 
 **Who:** Adrian, with Claude Code, on `feature/room-size-cap-and-help`.

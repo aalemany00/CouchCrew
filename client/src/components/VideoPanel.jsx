@@ -6,6 +6,7 @@
 // -> this. See LOG.md.
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
+import { getDevicePrefs } from "../lib/devicePrefs";
 
 // Browsers behind different networks usually need a TURN relay to reach each
 // other. The server hands out short-lived relay credentials (GET /ice); if
@@ -37,6 +38,13 @@ async function loadIceServers() {
 async function getLocalTracks(wantMic, wantCam) {
   const tracks = [];
   const failed = [];
+  // Room settings drawer lets someone pick a non-default mic/camera; falls
+  // back to the browser's own default (and to facingMode-only for camera)
+  // whenever no preference is set or the preferred device is gone.
+  const { micId, camId } = getDevicePrefs();
+  const audioConstraint = micId ? { deviceId: { exact: micId } } : true;
+  const videoConstraint = camId ? { deviceId: { exact: camId } } : { facingMode: "user" };
+
   async function tryGet(constraints, label) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -51,15 +59,15 @@ async function getLocalTracks(wantMic, wantCam) {
     return { tracks, notes: ["This browser can't use a mic or camera here."] };
   }
   if (wantMic && wantCam) {
-    const both = await tryGet({ audio: true, video: { facingMode: "user" } });
+    const both = await tryGet({ audio: audioConstraint, video: videoConstraint });
     if (!both) {
-      await tryGet({ audio: true }, "mic");
-      await tryGet({ video: { facingMode: "user" } }, "camera");
+      await tryGet({ audio: audioConstraint }, "mic");
+      await tryGet({ video: videoConstraint }, "camera");
     }
   } else if (wantMic) {
-    await tryGet({ audio: true }, "mic");
+    await tryGet({ audio: audioConstraint }, "mic");
   } else if (wantCam) {
-    await tryGet({ video: { facingMode: "user" } }, "camera");
+    await tryGet({ video: videoConstraint }, "camera");
   }
   return {
     tracks,

@@ -8,6 +8,11 @@ import { registerIceRoute } from "./ice.js";
 const PORT = process.env.PORT || 3001;
 const MAX_HISTORY = 50;
 const MAX_MESSAGE_LENGTH = 500;
+// A resized-on-the-client JPEG data URL comfortably fits well under this;
+// it's just a sanity cap against someone sending something huge, since
+// avatars sit in memory on every member record and get re-broadcast on
+// every presence update.
+const MAX_AVATAR_LENGTH = 200_000;
 // Past this, video call quality degrades badly (per real testing - cameras
 // stutter above 4-5 people) well before Cloudflare TURN cost is a real
 // concern. See LOG.md for the bandwidth math.
@@ -26,6 +31,15 @@ app.use(express.json());
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+// Lets the client check whether a custom room code is already taken before
+// creating a room with it (rooms only "exist" here once someone has joined
+// them - there's no separate reservation step). Used to auto-suffix a
+// requested code instead of silently joining someone else's room.
+app.get("/api/room-exists/:code", (req, res) => {
+  const members = rooms.get(req.params.code.toLowerCase());
+  res.json({ exists: !!members && members.size > 0 });
 });
 
 registerIceRoute(app);
@@ -52,6 +66,14 @@ const roomThemes = new Map();
 // only passes WebRTC setup messages between them (signaling); the audio/video
 // itself flows directly between browsers.
 const roomCalls = new Map();
+// roomId -> Map<name, Timeout>. A disconnect schedules a delayed "left the
+// room" announcement instead of firing it immediately, so a page reload
+// (old socket disconnects, new one reconnects almost instantly) doesn't
+// read as a real leave - see room:join below, which cancels it on a
+// same-name reconnect within the window instead of announcing both a leave
+// and a rejoin for what was really just a blip.
+const pendingLeaveTimers = new Map();
+const RECONNECT_GRACE_MS = 3000;
 const VALID_THEMES = new Set([
   "classic",
   "horror",
@@ -95,7 +117,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("call:peer-left", { id: socket.id });
   }
 
-  socket.on("room:join", ({ roomId, name }) => {
+  socket.on("room:join", ({ roomId, name, avatar }) => {
     const existing = rooms.get(roomId);
     if (existing && existing.size >= MAX_ROOM_SIZE && !existing.has(socket.id)) {
       socket.emit("room:full", { roomId, max: MAX_ROOM_SIZE });
@@ -104,10 +126,11 @@ io.on("connection", (socket) => {
 
     joinedRoomId = roomId;
     const displayName = (name || "Guest").slice(0, 40);
+    const displayAvatar = typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH ? avatar : null;
     socket.join(roomId);
 
     if (!rooms.has(roomId)) rooms.set(roomId, new Map());
-    rooms.get(roomId).set(socket.id, { name: displayName });
+    rooms.get(roomId).set(socket.id, { name: displayName, avatar: displayAvatar });
 
     // First person into an empty room leads it.
     if (!roomLeaders.has(roomId)) roomLeaders.set(roomId, socket.id);
@@ -118,6 +141,17 @@ io.on("connection", (socket) => {
       ...roomState(roomId),
     });
     socket.to(roomId).emit("room:presence", roomState(roomId));
+
+    // A reconnect within the grace window (reload, brief network drop) isn't
+    // a real departure - cancel the pending "left" message instead of
+    // announcing a leave and a rejoin for what was really just a blip.
+    const pending = pendingLeaveTimers.get(roomId);
+    if (pending?.has(displayName)) {
+      clearTimeout(pending.get(displayName));
+      pending.delete(displayName);
+      if (pending.size === 0) pendingLeaveTimers.delete(roomId);
+      return;
+    }
 
     const systemMessage = addMessage(roomId, {
       id: `system-${socket.id}-${Date.now()}`,
@@ -139,6 +173,18 @@ io.on("connection", (socket) => {
       at: Date.now(),
     });
     io.to(roomId).emit("chat:message", message);
+  });
+
+  // Lets someone update their own name/avatar without leaving and rejoining
+  // the room - e.g. from the in-room settings drawer. Only ever touches the
+  // sender's own member record.
+  socket.on("profile:update", ({ roomId, name, avatar }) => {
+    const member = rooms.get(roomId)?.get(socket.id);
+    if (!member) return;
+    if (typeof name === "string" && name.trim()) member.name = name.trim().slice(0, 40);
+    if (avatar === null) member.avatar = null;
+    else if (typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH) member.avatar = avatar;
+    io.to(roomId).emit("room:presence", roomState(roomId));
   });
 
   // Generic sync-event relay for the watch party player (Job 3 builds on this).
@@ -203,6 +249,15 @@ io.on("connection", (socket) => {
         roomMessages.delete(joinedRoomId);
         roomLeaders.delete(joinedRoomId);
         roomThemes.delete(joinedRoomId);
+        // Cancel every still-pending "left" timer for this room before
+        // dropping the map - otherwise an orphaned setTimeout fires later,
+        // finds no map entry, and still goes ahead and re-adds a message to
+        // (and recreates roomMessages for) a room that's supposedly gone,
+        // potentially one a brand-new join has since recreated.
+        for (const timer of pendingLeaveTimers.get(joinedRoomId)?.values() || []) {
+          clearTimeout(timer);
+        }
+        pendingLeaveTimers.delete(joinedRoomId);
         return;
       }
       // Leadership follows along if the leader leaves, so the room never
@@ -213,13 +268,24 @@ io.on("connection", (socket) => {
     }
 
     socket.to(joinedRoomId).emit("room:presence", roomState(joinedRoomId));
-    const systemMessage = addMessage(joinedRoomId, {
-      id: `system-${socket.id}-${Date.now()}`,
-      system: true,
-      text: `${leavingName} left the room`,
-      at: Date.now(),
-    });
-    socket.to(joinedRoomId).emit("chat:message", systemMessage);
+
+    const roomId = joinedRoomId;
+    const timer = setTimeout(() => {
+      const pending = pendingLeaveTimers.get(roomId);
+      pending?.delete(leavingName);
+      if (pending?.size === 0) pendingLeaveTimers.delete(roomId);
+
+      const systemMessage = addMessage(roomId, {
+        id: `system-${socket.id}-${Date.now()}`,
+        system: true,
+        text: `${leavingName} left the room`,
+        at: Date.now(),
+      });
+      io.to(roomId).emit("chat:message", systemMessage);
+    }, RECONNECT_GRACE_MS);
+
+    if (!pendingLeaveTimers.has(roomId)) pendingLeaveTimers.set(roomId, new Map());
+    pendingLeaveTimers.get(roomId).set(leavingName, timer);
   });
 });
 

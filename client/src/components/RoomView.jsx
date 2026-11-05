@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
-import { THEMES, SNACKS, THEME_EASTER_EGGS } from "../lib/theater";
+import { THEME_EASTER_EGGS } from "../lib/theater";
+import { getSavedAvatar } from "../lib/avatar";
 import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
 import PixelTheaterScenery from "./PixelTheaterScenery";
+import RoomSettingsDrawer from "./RoomSettingsDrawer";
 
 const MARQUEE_CLICKS_TO_REVEAL = 5;
 const MARQUEE_CLICK_WINDOW_MS = 2000;
-const SNACK_CLICKS_TO_POP = 3;
-const SNACK_CLICK_WINDOW_MS = 1200;
 const HOLD_TO_LEAVE_MS = 3000;
 const LEAVE_MESSAGE_MS = 900;
 
@@ -24,11 +24,11 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [creditsVisible, setCreditsVisible] = useState(false);
   const [leaving, setLeaving] = useState(false); // theatrical pause before actually leaving
   const [roomFull, setRoomFull] = useState(null); // { max } once the server rejects a full room
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const amLeader = connected && leaderId === socket.id;
 
   const marqueeClicksRef = useRef([]);
-  const snackClicksRef = useRef({});
   const toastTimeoutRef = useRef(null);
   const flourishTimeoutRef = useRef(null);
   const holdTimeoutRef = useRef(null);
@@ -92,19 +92,10 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     }
   }
 
-  // Easter egg: click the same snack 3 times within 1.2s for a little show.
-  function handleSnackClick(snack) {
-    const now = Date.now();
-    const clicks = (snackClicksRef.current[snack.id] || []).filter(
-      (t) => now - t < SNACK_CLICK_WINDOW_MS
-    );
-    clicks.push(now);
-    snackClicksRef.current[snack.id] = clicks;
-    if (clicks.length >= SNACK_CLICKS_TO_POP) {
-      snackClicksRef.current[snack.id] = [];
-      playFlourish(`snack-${snack.id}`);
-      showToast(snack.message);
-    }
+  // Pushes a name/avatar change made in the room settings drawer to the
+  // server right away, instead of only taking effect on the next rejoin.
+  function handleProfileSave({ name, avatar }) {
+    socket.emit("profile:update", { roomId, name, avatar });
   }
 
   // Hold-to-leave: holding for 3s shows a theatrical pause, then leaves. A
@@ -141,7 +132,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     // own, but it doesn't know about our room concept).
     function handleConnect() {
       setConnected(true);
-      socket.emit("room:join", { roomId, name });
+      socket.emit("room:join", { roomId, name, avatar: getSavedAvatar() });
     }
     function handleDisconnect() {
       setConnected(false);
@@ -234,6 +225,14 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
       <header>
         <div className="room-header-top">
+          <button
+            type="button"
+            className="hamburger-button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Room settings"
+          >
+            ☰
+          </button>
           <h1 className="marquee-title" onClick={handleMarqueeClick}>
             Room: {roomId}
           </h1>
@@ -258,59 +257,21 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
           <p className="credits">Directed by Adrian · Henry · John — CouchCrew Pictures</p>
         )}
 
-        {amLeader && (
-          <div className="theme-picker">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={`theme-chip${t.id === theme ? " active" : ""}`}
-                onClick={() => setRoomTheme(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="snack-bar">
-          {SNACKS.map((snack) => (
-            <button
-              key={snack.id}
-              type="button"
-              className="snack"
-              title={snack.label}
-              onClick={() => handleSnackClick(snack)}
-            >
-              {snack.emoji}
-            </button>
-          ))}
-        </div>
-
-        {connected ? (
-          <ul className="member-list">
-            {members.map((m) => {
-              const isLeader = m.id === leaderId;
-              return (
-                <li key={m.id} className={isLeader ? "leader" : undefined}>
-                  {isLeader && <span title="Room leader">👑</span>} {m.name}
-                  {amLeader && !isLeader && (
-                    <button
-                      type="button"
-                      className="make-leader"
-                      onClick={() => transferLeader(m.id)}
-                    >
-                      Make leader
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="reconnecting">Reconnecting...</p>
-        )}
+        {!connected && <p className="reconnecting">Reconnecting...</p>}
       </header>
+
+      <RoomSettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        members={members}
+        leaderId={leaderId}
+        amLeader={amLeader}
+        theme={theme}
+        onSetTheme={setRoomTheme}
+        onTransferLeader={transferLeader}
+        onProfileSave={handleProfileSave}
+      />
+
       <div className="room-grid">
         {/* Grouped into one visual frame (see App.css .screen-stack) to read
             as a single screen, closer to the reference mockups, without
@@ -320,8 +281,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
           <WatchPlayer roomId={roomId} isLeader={amLeader} />
           <VideoPanel roomId={roomId} />
         </div>
-        <ChatPanel roomId={roomId} />
       </div>
+      <ChatPanel roomId={roomId} onFlourish={playFlourish} onToast={showToast} />
     </div>
     </div>
   );
