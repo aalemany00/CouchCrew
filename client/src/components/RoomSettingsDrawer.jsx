@@ -45,6 +45,11 @@ export default function RoomSettingsDrawer({
                 <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
                   {m.name}
                 </button>
+                {m.isDeveloper && (
+                  <span className="dev-badge" title="Built this app">
+                    🛠️ Dev
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -89,6 +94,11 @@ export default function RoomSettingsDrawer({
                     <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
                       {m.name}
                     </button>
+                    {m.isDeveloper && (
+                      <span className="dev-badge" title="Built this app">
+                        🛠️ Dev
+                      </span>
+                    )}
                     <button type="button" className="make-leader" onClick={() => onTransferLeader(m.id)}>
                       Make leader
                     </button>
@@ -104,6 +114,7 @@ export default function RoomSettingsDrawer({
           name={viewingMember.name}
           avatar={viewingMember.avatar}
           bio={viewingMember.bio}
+          isDeveloper={viewingMember.isDeveloper}
           onClose={() => setViewingMember(null)}
         />
       )}

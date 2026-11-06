@@ -130,6 +130,11 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
                     <button type="button" className="chat-sender-name" onClick={() => setViewingSender(m)}>
                       {m.name}
                     </button>
+                    {m.isDeveloper && (
+                      <span className="dev-badge" title="Built this app">
+                        🛠️
+                      </span>
+                    )}
                     <span>: {m.text}</span>
                     <span className="chat-time">{formatTime(m.at)}</span>
                   </>
@@ -154,6 +159,7 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
           name={viewingSender.name}
           avatar={viewingSender.avatar}
           bio={viewingSender.bio}
+          isDeveloper={viewingSender.isDeveloper}
           onClose={() => setViewingSender(null)}
         />
       )}
