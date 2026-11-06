@@ -539,6 +539,29 @@ button.secondary.leave {
   color: var(--text-dim);
 }
 
+/* A verified badge (server checks the signed-in account, not anything the
+   client claims) shown next to the one account that built this app. */
+.dev-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.dev-badge-large {
+  display: inline-block;
+  margin: -0.25rem 0 0.5rem;
+  font-size: 0.8rem;
+}
+
 .placeholder {
   border: 1px dashed var(--panel-border);
   color: var(--text-dim);

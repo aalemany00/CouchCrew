@@ -3,6 +3,7 @@ import { socket } from "../lib/socket";
 import { THEME_EASTER_EGGS } from "../lib/theater";
 import { getSavedAvatar } from "../lib/avatar";
 import { getSavedBio } from "../lib/profile";
+import { getToken } from "../lib/auth";
 import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
@@ -134,7 +135,13 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     // own, but it doesn't know about our room concept).
     function handleConnect() {
       setConnected(true);
-      socket.emit("room:join", { roomId, name, avatar: getSavedAvatar(), bio: getSavedBio() });
+      socket.emit("room:join", {
+        roomId,
+        name,
+        avatar: getSavedAvatar(),
+        bio: getSavedBio(),
+        authToken: getToken(),
+      });
     }
     function handleDisconnect() {
       setConnected(false);

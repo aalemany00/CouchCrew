@@ -5,6 +5,31 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — A verified "developer" badge
+
+**Who:** Adrian, with Claude Code, on `feature/developer-badge`.
+
+**What we built:** a 🛠️ "Dev" badge next to Adrian's name wherever a name
+shows up in a room - the People list, the member profile card ("🛠️ Built
+this app"), and chat messages. Deliberately **not** something the client
+can claim for itself: `room:join` now optionally carries the signed-in
+session's `authToken`, and `server/index.js` looks that token up via
+`getUserByToken` (from `server/db.js`) and checks the account's *actual*
+email server-side against one hardcoded address
+(`adrian.alemany2@gmail.com`) before ever setting `isDeveloper` on that
+member's record - typing a name, or any client-side trick, can't produce
+the badge. Chat messages snapshot `isDeveloper` the same way they already
+do for avatar/bio.
+
+**Verified:** signed in locally as that account, created a room, and
+confirmed the badge shows in the People list and the profile card
+("🛠️ Built this app"); joined the same room from a second tab signed out
+(just "Henry", no account) and confirmed no badge appears for them -
+having a name or being in the room isn't enough, only the verified
+account is.
+
+---
+
 ## 2026-11-06 — Delete account
 
 **Who:** Adrian, with Claude Code, on `feature/delete-account`.
