@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import {
   changePassword,
   deleteAccount,
+  deleteAccountById,
   fetchMe,
   getCachedUser,
   getSecurityQuestion,
+  listAllAccounts,
   resetPassword,
   signIn,
   signOut,
@@ -182,6 +184,112 @@ function SignedIn({ user, onSignedOut }) {
       )}
 
       {saved && <p className="room-tag">Password updated.</p>}
+
+      {user.isDeveloper && <AdminAccounts selfId={user.id} />}
+    </div>
+  );
+}
+
+// Only ever rendered for the one hardcoded developer account (server
+// rejects the requests anyway if someone else's cached user object were
+// ever forged client-side - see server/auth.js's requireDeveloper).
+function AdminAccounts({ selfId }) {
+  const [open, setOpen] = useState(false);
+  const [accounts, setAccounts] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
+
+  async function load() {
+    setError("");
+    try {
+      setAccounts(await listAllAccounts());
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !accounts) load();
+  }
+
+  async function removeOne(id) {
+    setBusyId(id);
+    setError("");
+    try {
+      await deleteAccountById(id);
+      setAccounts((list) => list.filter((a) => a.id !== id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function removeAllOthers() {
+    const others = accounts.filter((a) => a.id !== selfId);
+    if (others.length === 0) return;
+    if (!window.confirm(`Delete all ${others.length} other account(s)? This can't be undone.`)) return;
+    setBusyId("all");
+    setError("");
+    try {
+      for (const a of others) await deleteAccountById(a.id);
+      setAccounts((list) => list.filter((a) => a.id === selfId));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const others = accounts?.filter((a) => a.id !== selfId) ?? [];
+
+  return (
+    <div className="admin-accounts">
+      <button type="button" className="collapsible-toggle" onClick={toggle} aria-expanded={open}>
+        <span>🛠 Admin: accounts {accounts && `(${accounts.length})`}</span>
+        <span aria-hidden="true">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="collapsible-body">
+          {error && <p className="watch-error">{error}</p>}
+          {!accounts ? (
+            <p className="room-tag">Loading…</p>
+          ) : (
+            <>
+              <ul className="admin-account-list">
+                {accounts.map((a) => (
+                  <li key={a.id}>
+                    <span>
+                      {a.name} — {a.email}
+                      {a.id === selfId && " (you)"}
+                      {a.isDeveloper && a.id !== selfId && " (developer)"}
+                    </span>
+                    {a.id !== selfId && (
+                      <button
+                        type="button"
+                        className="recent-room-remove"
+                        title={`Delete ${a.email}`}
+                        aria-label={`Delete ${a.email}`}
+                        onClick={() => removeOne(a.id)}
+                        disabled={busyId === a.id || busyId === "all"}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {others.length > 0 && (
+                <button type="button" className="secondary danger" onClick={removeAllOthers} disabled={busyId}>
+                  {busyId === "all" ? "Deleting…" : `Delete all ${others.length} other account(s)`}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

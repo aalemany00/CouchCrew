@@ -1381,6 +1381,27 @@ video.watch-frame {
   border-color: #c4495a;
 }
 
+.admin-accounts {
+  margin-top: 1rem;
+}
+
+.admin-account-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-account-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
 .settings-page form,
 .profile-form {
   display: flex;
