@@ -541,26 +541,6 @@ button.secondary.leave {
 
 /* A verified badge (server checks the signed-in account, not anything the
    client claims) shown next to the one account that built this app. */
-.dev-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin-left: 0.3rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-size: 0.7rem;
-  font-weight: 700;
-  vertical-align: middle;
-}
-
-.dev-badge-large {
-  display: inline-block;
-  margin: -0.25rem 0 0.5rem;
-  font-size: 0.8rem;
-}
 
 .placeholder {
   border: 1px dashed var(--panel-border);
@@ -1663,4 +1643,28 @@ button.secondary.danger {
   .hero-chat-preview {
     width: 100%;
   }
+}
+
+/* ===== One verified account's permanent name/avatar glow =====
+   Kept at the very end of the file (not with the other member-list/chat
+   rules above) so its `color` always wins the cascade over whatever
+   `color: inherit` those earlier rules set, without needing !important.
+   Fixed colors, not theme variables, so it looks the same in every room
+   theme, and it's visible the instant a name renders - no click or hover
+   needed. Whatever display name is set, this is permanent. */
+.dev-name {
+  color: #e8fbff;
+  text-shadow:
+    0 0 4px #4df1ff,
+    0 0 10px #4df1ff,
+    0 0 18px #c45dff,
+    0 0 2px #fff;
+  font-weight: 700;
+}
+
+.dev-avatar {
+  border-color: #4df1ff;
+  box-shadow:
+    0 0 6px #4df1ff,
+    0 0 14px #c45dff;
 }

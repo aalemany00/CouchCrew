@@ -121,20 +121,19 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
                   <>
                     <button
                       type="button"
-                      className="avatar-preview chat-avatar-button"
+                      className={`avatar-preview chat-avatar-button${m.isDeveloper ? " dev-avatar" : ""}`}
                       onClick={() => setViewingSender(m)}
                       aria-label={`${m.name}'s profile`}
                     >
                       {m.avatar ? <img src={m.avatar} alt="" /> : (m.name?.trim()[0] || "?").toUpperCase()}
                     </button>
-                    <button type="button" className="chat-sender-name" onClick={() => setViewingSender(m)}>
+                    <button
+                      type="button"
+                      className={`chat-sender-name${m.isDeveloper ? " dev-name" : ""}`}
+                      onClick={() => setViewingSender(m)}
+                    >
                       {m.name}
                     </button>
-                    {m.isDeveloper && (
-                      <span className="dev-badge" title="Built this app">
-                        🛠️
-                      </span>
-                    )}
                     <span>: {m.text}</span>
                     <span className="chat-time">{formatTime(m.at)}</span>
                   </>
