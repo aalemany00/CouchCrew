@@ -5,6 +5,28 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Delete account
+
+**Who:** Adrian, with Claude Code, on `feature/delete-account`.
+
+**What we built:** `DELETE /api/auth/account` (`server/auth.js` +
+`deleteUser` in `server/db.js`) - requires the current password, same as
+changing it, rather than being a single click; removes the user row and
+every session for that account. Settings' Account section has a "Delete
+account" action that opens a clear warning plus a password-confirmation
+form before anything happens. Deleting signs you out but deliberately
+doesn't touch `couchcrew:name`/`avatar`/`bio` in `localStorage` - your
+name/photo/bio keep working as a local, no-longer-account-backed profile
+afterward, same as before ever signing up.
+
+**Verified:** wrong password on the confirmation form is rejected with
+"Password is wrong." and nothing is deleted; the correct password deletes
+the account, signs the UI back out to the Sign In/Sign Up/Forgot Password
+view, and confirmed via `/api/auth/login` that the deleted account can no
+longer sign in at all.
+
+---
+
 ## 2026-11-06 — Real user accounts: sign up/in, change/reset password, account-backed profile
 
 **Who:** Adrian, with Claude Code, on `feature/user-accounts`. Discussed

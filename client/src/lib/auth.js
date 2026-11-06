@@ -113,6 +113,18 @@ export async function changePassword({ currentPassword, newPassword }) {
   });
 }
 
+// Permanently deletes the account server-side (requires the password, same
+// as changing it) and clears the local session. Doesn't touch
+// couchcrew:name/avatar/bio - those stay as a local, no-longer-account-
+// backed profile, same as before ever signing up.
+export async function deleteAccount({ password }) {
+  await request("/api/auth/account", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
+  clearSession();
+}
+
 export async function updateAccountProfile({ name, avatar, bio }) {
   const body = await request("/api/auth/profile", {
     method: "PUT",

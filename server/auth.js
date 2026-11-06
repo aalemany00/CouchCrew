@@ -7,6 +7,7 @@ import {
   createSession,
   createUser,
   deleteSession,
+  deleteUser,
   getUserByEmail,
   getUserByToken,
   toPublicUser,
@@ -116,6 +117,18 @@ export function registerAuthRoutes(app) {
       return res.status(400).json({ error: `New password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
     }
     updatePassword(req.user.id, newPassword);
+    res.json({ ok: true });
+  });
+
+  // Irreversible - requires the current password, same as changing it,
+  // rather than being a single click. Also clears every session for this
+  // account (not just the one making the request).
+  app.delete("/api/auth/account", requireAuth, (req, res) => {
+    const { password } = req.body || {};
+    if (!verifyPassword(req.user, password || "")) {
+      return res.status(401).json({ error: "Password is wrong." });
+    }
+    deleteUser(req.user.id);
     res.json({ ok: true });
   });
 

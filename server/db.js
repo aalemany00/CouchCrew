@@ -102,6 +102,11 @@ export function updateProfile(userId, { name, avatar, bio }) {
   return getUserById(userId);
 }
 
+export function deleteUser(userId) {
+  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+  db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+}
+
 export function createSession(userId) {
   const token = randomBytes(32).toString("hex");
   db.prepare("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)").run(
