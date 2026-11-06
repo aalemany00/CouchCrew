@@ -1,41 +1,58 @@
-// Account storage: SQLite (Node's built-in node:sqlite - no extra
-// dependency, no native module to build/deploy). A single file alongside
-// the server; on a host with an ephemeral filesystem (e.g. Render's free
-// tier) this resets on redeploy, which is an accepted tradeoff for a
-// course project, not something production-grade.
+// Account storage: libSQL (Turso's client), the same SQL/SQLite dialect as
+// before but talking to a real persistent database instead of a file on the
+// server's own disk. That file-on-disk approach (node:sqlite) worked locally
+// but silently lost every account on Render's free tier: Render's free web
+// services have an ephemeral filesystem that resets on every redeploy,
+// restart, or spin-down - confirmed against Render's own docs, not assumed
+// (see LOG.md). Render's own free Postgres/Key-Value aren't durable either
+// (Postgres expires after 30 days free; Key-Value doesn't persist restarts),
+// so this needs an external service - Turso's free tier (5GB, ~500M reads/
+// 10M writes a month, no card) comfortably covers this project.
+//
+// Locally, with no TURSO_DATABASE_URL set, this falls back to a local file
+// (libSQL's own embedded mode) - so running the server locally needs no
+// Turso account at all, same "free with no setup locally, real credentials
+// only in production" pattern as the Cloudflare TURN relay.
 //
 // Passwords and security-question answers are never stored in plain text -
 // scryptSync (built into node:crypto, no bcrypt dependency needed) with a
 // random salt per secret, in "<salt>:<hash>" form, compared with
 // timingSafeEqual so a wrong guess can't be timed to narrow it down.
-import { DatabaseSync } from "node:sqlite";
+import { createClient } from "@libsql/client";
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "couchcrew.db");
+const LOCAL_DB_PATH = path.join(__dirname, "couchcrew.db");
 
-export const db = new DatabaseSync(DB_PATH);
+export const db = createClient(
+  process.env.TURSO_DATABASE_URL
+    ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN }
+    : { url: `file:${LOCAL_DB_PATH}` }
+);
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    avatar TEXT,
-    bio TEXT,
-    security_question TEXT NOT NULL,
-    security_answer_hash TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  );
-`);
+export const ready = db.batch(
+  [
+    `CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      avatar TEXT,
+      bio TEXT,
+      security_question TEXT NOT NULL,
+      security_answer_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`,
+  ],
+  "write"
+);
 
 function hashSecret(secret) {
   const salt = randomBytes(16).toString("hex");
@@ -51,28 +68,44 @@ function verifySecret(secret, stored) {
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
-export function getUserByEmail(email) {
-  return db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase()) || null;
+function row(result) {
+  if (!result.rows.length) return null;
+  const cols = result.columns;
+  const r = result.rows[0];
+  return Object.fromEntries(cols.map((c, i) => [c, r[i]]));
 }
 
-export function getUserById(id) {
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(id) || null;
+export async function getUserByEmail(email) {
+  await ready;
+  const result = await db.execute({
+    sql: "SELECT * FROM users WHERE email = ?",
+    args: [email.toLowerCase()],
+  });
+  return row(result);
 }
 
-export function createUser({ email, password, name, securityQuestion, securityAnswer }) {
+export async function getUserById(id) {
+  await ready;
+  const result = await db.execute({ sql: "SELECT * FROM users WHERE id = ?", args: [id] });
+  return row(result);
+}
+
+export async function createUser({ email, password, name, securityQuestion, securityAnswer }) {
+  await ready;
   const id = randomUUID();
-  db.prepare(
-    `INSERT INTO users (id, email, password_hash, name, avatar, bio, security_question, security_answer_hash, created_at)
-     VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?)`
-  ).run(
-    id,
-    email.toLowerCase(),
-    hashSecret(password),
-    name,
-    securityQuestion,
-    hashSecret(securityAnswer.toLowerCase().trim()),
-    Date.now()
-  );
+  await db.execute({
+    sql: `INSERT INTO users (id, email, password_hash, name, avatar, bio, security_question, security_answer_hash, created_at)
+          VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
+    args: [
+      id,
+      email.toLowerCase(),
+      hashSecret(password),
+      name,
+      securityQuestion,
+      hashSecret(securityAnswer.toLowerCase().trim()),
+      Date.now(),
+    ],
+  });
   return getUserById(id);
 }
 
@@ -84,46 +117,56 @@ export function verifySecurityAnswer(user, answer) {
   return verifySecret((answer || "").toLowerCase().trim(), user.security_answer_hash);
 }
 
-export function updatePassword(userId, newPassword) {
-  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashSecret(newPassword), userId);
+export async function updatePassword(userId, newPassword) {
+  await ready;
+  await db.execute({
+    sql: "UPDATE users SET password_hash = ? WHERE id = ?",
+    args: [hashSecret(newPassword), userId],
+  });
 }
 
 // Deliberately only touches name/avatar/bio - the fields that are allowed
 // to "translate over to rooms" (see server/index.js's room:join/
 // profile:update). Email and password live only here and in /api/auth/me,
 // never broadcast to a room or another viewer.
-export function updateProfile(userId, { name, avatar, bio }) {
-  db.prepare("UPDATE users SET name = ?, avatar = ?, bio = ? WHERE id = ?").run(
-    name,
-    avatar ?? null,
-    bio ?? null,
-    userId
-  );
+export async function updateProfile(userId, { name, avatar, bio }) {
+  await ready;
+  await db.execute({
+    sql: "UPDATE users SET name = ?, avatar = ?, bio = ? WHERE id = ?",
+    args: [name, avatar ?? null, bio ?? null, userId],
+  });
   return getUserById(userId);
 }
 
-export function deleteUser(userId) {
-  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
-  db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+export async function deleteUser(userId) {
+  await ready;
+  await db.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [userId] });
+  await db.execute({ sql: "DELETE FROM users WHERE id = ?", args: [userId] });
 }
 
-export function createSession(userId) {
+export async function createSession(userId) {
+  await ready;
   const token = randomBytes(32).toString("hex");
-  db.prepare("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)").run(
-    token,
-    userId,
-    Date.now()
-  );
+  await db.execute({
+    sql: "INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)",
+    args: [token, userId, Date.now()],
+  });
   return token;
 }
 
-export function getUserByToken(token) {
-  const row = db.prepare("SELECT user_id FROM sessions WHERE token = ?").get(token);
-  return row ? getUserById(row.user_id) : null;
+export async function getUserByToken(token) {
+  await ready;
+  const result = await db.execute({
+    sql: "SELECT user_id FROM sessions WHERE token = ?",
+    args: [token],
+  });
+  const r = row(result);
+  return r ? getUserById(r.user_id) : null;
 }
 
-export function deleteSession(token) {
-  db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+export async function deleteSession(token) {
+  await ready;
+  await db.execute({ sql: "DELETE FROM sessions WHERE token = ?", args: [token] });
 }
 
 // Never include password_hash/security_answer_hash past this point - this

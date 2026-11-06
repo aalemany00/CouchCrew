@@ -15,9 +15,9 @@ const PORT = process.env.PORT || 3001;
 // client claims directly.
 const DEVELOPER_EMAIL = "adrian.alemany2@gmail.com";
 
-function isDeveloperToken(authToken) {
+async function isDeveloperToken(authToken) {
   if (typeof authToken !== "string" || !authToken) return false;
-  const account = getUserByToken(authToken);
+  const account = await getUserByToken(authToken);
   return !!account && account.email.toLowerCase() === DEVELOPER_EMAIL;
 }
 const MAX_HISTORY = 50;
@@ -134,7 +134,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("call:peer-left", { id: socket.id });
   }
 
-  socket.on("room:join", ({ roomId, name, avatar, bio, authToken }) => {
+  socket.on("room:join", async ({ roomId, name, avatar, bio, authToken }) => {
     const existing = rooms.get(roomId);
     if (existing && existing.size >= MAX_ROOM_SIZE && !existing.has(socket.id)) {
       socket.emit("room:full", { roomId, max: MAX_ROOM_SIZE });
@@ -145,7 +145,7 @@ io.on("connection", (socket) => {
     const displayName = (name || "Guest").slice(0, 40);
     const displayAvatar = typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH ? avatar : null;
     const displayBio = typeof bio === "string" ? bio.slice(0, MAX_BIO_LENGTH) : "";
-    const isDeveloper = isDeveloperToken(authToken);
+    const isDeveloper = await isDeveloperToken(authToken);
     socket.join(roomId);
 
     if (!rooms.has(roomId)) rooms.set(roomId, new Map());

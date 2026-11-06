@@ -5,6 +5,62 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Accounts were being silently wiped on every deploy (fixed)
+
+**Who:** Adrian, with Claude Code, on `feature/persistent-accounts-turso`.
+
+**What happened:** Adrian signed up for an account, then later found
+"Forgot Password" reported "No account with that email" for the exact
+email he signed up with. Traced it to `server/db.js`: accounts were stored
+in a SQLite file on the server's own disk (`node:sqlite`), and that file's
+own comment already said this resets on Render's free tier - but that was
+logged as an "accepted tradeoff" rather than something that would actually
+bite. It bites constantly: Render redeploys on every merge, and each
+redeploy wipes the file, deleting every account that existed since the
+last deploy. With how often this team merges PRs, real accounts were never
+going to survive more than a day or two.
+
+**Checked before proposing a fix (not assumed):** confirmed against
+Render's own docs that free web services have an ephemeral filesystem
+wiped on every redeploy/restart/spin-down, and that Render's own free
+alternatives aren't durable either - free Postgres expires 30 days after
+creation, and free Key-Value doesn't persist restarts. So this needed an
+external service, not a Render setting. Turso (hosted SQLite/libSQL)
+confirmed free with no card: 5GB storage, ~500M reads/10M writes a month,
+comfortably past anything this project needs.
+
+**What we built:** `server/db.js` now uses `@libsql/client` instead of
+`node:sqlite` - same SQL, but every call is async (libSQL's client is
+Promise-based). `server/auth.js` and the one other caller
+(`server/index.js`'s developer-badge check) now `await` those calls.
+With `TURSO_DATABASE_URL` unset, it falls back to a local file (libSQL's
+own embedded mode) - so running the server locally still needs no account
+or setup at all, same pattern as the Cloudflare TURN relay (real
+credentials only required in production).
+
+**Verified for real:** started the server locally against the existing
+`node:sqlite`-created file - libSQL opened it with no migration needed and
+found Adrian's real account already in it (confirmed via a direct
+`/api/auth/security-question` call). Then ran the actual failure mode:
+signed up a fresh test account, fully restarted the server process
+(simulating a redeploy), and logged back in - succeeded. Also signed up
+through the real UI (not just curl), confirmed the full account flow
+(profile fields, sign out, delete account) still works end to end, then
+deleted the test account.
+
+**Open items:**
+- Adrian needs to create a free Turso database and add
+  `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` to Render's environment
+  variables for this to actually take effect in production - without
+  them, production keeps using Render's own ephemeral file and the bug
+  isn't actually fixed yet, just made fixable.
+- Whichever real account Adrian had before this (the one "Forgot
+  Password" couldn't find) is gone for good - wiped by whatever redeploy
+  happened after he signed up. He'll need to sign up again once Turso is
+  wired in.
+
+---
+
 ## 2026-11-06 — Replaced the dev badge chip with a permanent glowing name/avatar
 
 **Who:** Adrian, with Claude Code, on `feature/dev-identity-glow`. Follow-up
