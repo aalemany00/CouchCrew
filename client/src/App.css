@@ -1597,6 +1597,17 @@ video.watch-frame {
   flex-wrap: wrap;
 }
 
+button.danger {
+  background: #c4495a;
+  color: #fff0f1;
+}
+
+button.secondary.danger {
+  background: transparent;
+  border-color: #c4495a;
+  color: #e8828e;
+}
+
 .device-settings {
   display: flex;
   flex-direction: column;

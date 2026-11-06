@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   changePassword,
+  deleteAccount,
   fetchMe,
   getCachedUser,
   getSecurityQuestion,
@@ -32,8 +33,7 @@ export default function AccountSection({ onAccountChange }) {
     onAccountChange?.(u);
   }
 
-  async function handleSignOut() {
-    await signOut();
+  async function handleSignedOut() {
     setUser(null);
     onAccountChange?.(null);
   }
@@ -42,7 +42,7 @@ export default function AccountSection({ onAccountChange }) {
     <section className="account-section">
       <h2>Account</h2>
       {!checked ? null : user ? (
-        <SignedIn user={user} onSignOut={handleSignOut} />
+        <SignedIn user={user} onSignedOut={handleSignedOut} />
       ) : (
         <SignedOut onAuthed={handleAuthed} />
       )}
@@ -50,25 +50,54 @@ export default function AccountSection({ onAccountChange }) {
   );
 }
 
-function SignedIn({ user, onSignOut }) {
-  const [changing, setChanging] = useState(false);
+function SignedIn({ user, onSignedOut }) {
+  // "actions" | "changePassword" | "deleteAccount" - mutually exclusive so
+  // there's never a change-password form and a delete-account confirmation
+  // open at the same time.
+  const [view, setView] = useState("actions");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e) {
+  function backToActions() {
+    setView("actions");
+    setError("");
+    setCurrentPassword("");
+    setNewPassword("");
+    setDeletePassword("");
+  }
+
+  async function submitChangePassword(e) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
       await changePassword({ currentPassword, newPassword });
-      setCurrentPassword("");
-      setNewPassword("");
-      setChanging(false);
+      backToActions();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    onSignedOut();
+  }
+
+  async function submitDeleteAccount(e) {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await deleteAccount({ password: deletePassword });
+      onSignedOut();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -81,17 +110,22 @@ function SignedIn({ user, onSignOut }) {
       <p className="room-tag">
         Signed in as <strong>{user.email}</strong> — only you can see this.
       </p>
-      {!changing ? (
+      {view === "actions" && (
         <div className="account-actions">
-          <button type="button" className="secondary" onClick={() => setChanging(true)}>
+          <button type="button" className="secondary" onClick={() => setView("changePassword")}>
             Change password
           </button>
-          <button type="button" className="secondary" onClick={onSignOut}>
+          <button type="button" className="secondary" onClick={handleSignOut}>
             Sign out
           </button>
+          <button type="button" className="secondary danger" onClick={() => setView("deleteAccount")}>
+            Delete account
+          </button>
         </div>
-      ) : (
-        <form className="profile-form" onSubmit={submit}>
+      )}
+
+      {view === "changePassword" && (
+        <form className="profile-form" onSubmit={submitChangePassword}>
           <label htmlFor="current-password">Current password</label>
           <input
             id="current-password"
@@ -114,12 +148,39 @@ function SignedIn({ user, onSignOut }) {
             <button type="submit" disabled={busy}>
               {busy ? "Saving…" : "Save new password"}
             </button>
-            <button type="button" className="secondary" onClick={() => setChanging(false)}>
+            <button type="button" className="secondary" onClick={backToActions}>
               Cancel
             </button>
           </div>
         </form>
       )}
+
+      {view === "deleteAccount" && (
+        <form className="profile-form" onSubmit={submitDeleteAccount}>
+          <p className="watch-error">
+            This permanently deletes your account and can't be undone. Your name, photo, and bio
+            stay on this device as a local (non-account) profile.
+          </p>
+          <label htmlFor="delete-password">Enter your password to confirm</label>
+          <input
+            id="delete-password"
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            required
+          />
+          {error && <p className="watch-error">{error}</p>}
+          <div className="account-actions">
+            <button type="submit" className="danger" disabled={busy}>
+              {busy ? "Deleting…" : "Delete my account"}
+            </button>
+            <button type="button" className="secondary" onClick={backToActions}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
       {saved && <p className="room-tag">Password updated.</p>}
     </div>
   );
