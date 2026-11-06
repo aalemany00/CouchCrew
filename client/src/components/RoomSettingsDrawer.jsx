@@ -42,14 +42,13 @@ export default function RoomSettingsDrawer({
             {members.map((m) => (
               <li key={m.id} className={m.id === leaderId ? "leader" : undefined}>
                 {m.id === leaderId && <span title="Room leader">👑</span>}{" "}
-                <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
+                <button
+                  type="button"
+                  className={`member-name-button${m.isDeveloper ? " dev-name" : ""}`}
+                  onClick={() => setViewingMember(m)}
+                >
                   {m.name}
                 </button>
-                {m.isDeveloper && (
-                  <span className="dev-badge" title="Built this app">
-                    🛠️ Dev
-                  </span>
-                )}
               </li>
             ))}
           </ul>
@@ -91,14 +90,13 @@ export default function RoomSettingsDrawer({
                 .filter((m) => m.id !== leaderId)
                 .map((m) => (
                   <li key={m.id}>
-                    <button type="button" className="member-name-button" onClick={() => setViewingMember(m)}>
+                    <button
+                      type="button"
+                      className={`member-name-button${m.isDeveloper ? " dev-name" : ""}`}
+                      onClick={() => setViewingMember(m)}
+                    >
                       {m.name}
                     </button>
-                    {m.isDeveloper && (
-                      <span className="dev-badge" title="Built this app">
-                        🛠️ Dev
-                      </span>
-                    )}
                     <button type="button" className="make-leader" onClick={() => onTransferLeader(m.id)}>
                       Make leader
                     </button>

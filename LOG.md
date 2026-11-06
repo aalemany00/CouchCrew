@@ -5,6 +5,39 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Replaced the dev badge chip with a permanent glowing name/avatar
+
+**Who:** Adrian, with Claude Code, on `feature/dev-identity-glow`. Follow-up
+to the "developer badge" entry below, per Adrian's own feedback: he didn't
+want a separate tag that needed a click/room-settings visit to notice -
+just wanted his own identity to look different everywhere his name shows,
+automatically.
+
+**What changed:** removed the "🛠️ Dev" chip from the People list, Leader
+list, chat, and profile card. In its place, `.dev-name`/`.dev-avatar` in
+`App.css` give the verified account's name text a permanent cyan/magenta
+neon glow (`text-shadow`, fixed hex colors rather than the room's theme
+variables, so it looks the same in every one of the 8 themes) and its
+avatar circle a matching glowing ring - applied via a plain CSS class
+added wherever `isDeveloper` is true, no extra markup or click needed to
+reveal it. The server-side verification from the previous entry (checking
+the real signed-in account's email, not anything the client claims) is
+completely unchanged - this was a display-only follow-up.
+
+One implementation note worth keeping: `.dev-name`/`.dev-avatar` had to be
+moved to the very end of `App.css`, since `.member-name-button` and
+`.chat-sender-name` both set `color: inherit` and are declared later in
+the file than where these rules first lived - same CSS specificity means
+whichever rule comes last in the file wins, so the glow was silently
+getting overridden back to the default color until they were moved.
+
+**Verified:** sent a chat message and opened the room settings drawer as
+the verified account - "Adrian" renders in a visible cyan glow against
+plain white chat text in both places, with a matching glow ring on the
+avatar, with no click or hover required to see it.
+
+---
+
 ## 2026-11-06 — A verified "developer" badge
 
 **Who:** Adrian, with Claude Code, on `feature/developer-badge`.
