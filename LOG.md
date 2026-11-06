@@ -5,6 +5,56 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Admin: list/delete accounts (Settings)
+
+**Who:** Adrian, with Claude Code, on `feature/admin-account-management`.
+
+**What happened:** after the Turso migration, Adrian asked to get his
+developer badge back and to remove the other (test) accounts that had
+piled up. Checked first: his production account still existed with its
+security question intact (the Render-file bug hadn't actually wiped it
+yet at that point), and the developer badge is computed live from the
+signed-in account's email on every room:join - there's no extra per-
+account state to "re-apply," so nothing was actually lost there. But there
+was no way to remove *other* accounts at all: `DELETE /api/auth/account`
+intentionally requires the target account's own password (you can only
+delete yourself), so cleaning up test/teammate accounts had no path that
+didn't involve touching the database directly.
+
+**What we built:** a small admin capability gated to the one hardcoded
+developer account (`server/developer.js`, now shared between the room
+badge check and this, so they can't drift apart):
+- `GET /api/admin/users` / `DELETE /api/admin/users/:id`, both behind a
+  `requireDeveloper` check - a non-developer account gets a 403, verified
+  directly (not assumed).
+- A collapsible "Admin: accounts" section in Settings, visible only when
+  `user.isDeveloper` is true (computed server-side, never trusted from the
+  client) - lists every account, lets you delete one at a time, or
+  everything except your own with a single confirm.
+- The admin delete route refuses to delete the caller's own account (use
+  the regular password-confirmed delete-account flow for that) - it's a
+  one-line mistake-guard, not a security boundary, since the account would
+  obviously have the authority to delete itself anyway.
+
+**Verified for real:** created a developer account plus two "other" test
+accounts locally, confirmed the admin panel correctly lists all three with
+"(you)" on the right one, deleted one individually (button, no `window.
+confirm`), confirmed server-side the deleted account can no longer log in,
+and confirmed access control both ways - the developer's own token can
+list accounts, a non-developer's token gets a 403. (The bulk "delete all
+others" button uses `window.confirm`, which the browser-automation
+environment used for testing silently dismisses - not re-verified through
+that exact path, but it calls the same per-account delete already proven
+to work.)
+
+**Open items:**
+- Once Turso is wired up in production (previous entry), this is the tool
+  to use for cleaning up whatever test accounts exist there - sign in as
+  the developer account on the live site and use the panel directly,
+  rather than this session touching production data.
+
+---
+
 ## 2026-11-06 — Accounts were being silently wiped on every deploy (fixed)
 
 **Who:** Adrian, with Claude Code, on `feature/persistent-accounts-turso`.

@@ -8,6 +8,7 @@ import {
   createUser,
   deleteSession,
   deleteUser,
+  getAllUsers,
   getUserByEmail,
   getUserByToken,
   toPublicUser,
@@ -16,6 +17,7 @@ import {
   verifyPassword,
   verifySecurityAnswer,
 } from "./db.js";
+import { isDeveloperEmail } from "./developer.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -30,6 +32,16 @@ async function requireAuth(req, res, next) {
   }
   req.user = user;
   req.token = token;
+  next();
+}
+
+// Gate for the admin routes below - only the one hardcoded developer
+// account (same check that drives the in-room developer badge; see
+// server/developer.js) can list or delete other people's accounts.
+function requireDeveloper(req, res, next) {
+  if (!isDeveloperEmail(req.user.email)) {
+    return res.status(403).json({ error: "Not allowed." });
+  }
   next();
 }
 
@@ -145,5 +157,25 @@ export function registerAuthRoutes(app) {
       bio: typeof bio === "string" ? bio.slice(0, 160) : null,
     });
     res.json({ user: toPublicUser(user) });
+  });
+
+  // Admin-only: list every account, for cleaning up test/teammate accounts
+  // from Settings. Never exposed to a non-developer account.
+  app.get("/api/admin/users", requireAuth, requireDeveloper, async (req, res) => {
+    const users = await getAllUsers();
+    res.json({ users: users.map(toPublicUser) });
+  });
+
+  // Admin-only delete - unlike the self-service /api/auth/account, this
+  // doesn't need the target account's password (the caller's own developer
+  // status is the authority here), so it refuses to delete the caller's own
+  // account through this route - use the regular delete-account flow for
+  // that, which does ask for your password.
+  app.delete("/api/admin/users/:id", requireAuth, requireDeveloper, async (req, res) => {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: "Use the regular delete-account option for your own account." });
+    }
+    await deleteUser(req.params.id);
+    res.json({ ok: true });
   });
 }

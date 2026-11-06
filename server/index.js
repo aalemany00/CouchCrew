@@ -7,18 +7,18 @@ import { registerIceRoute } from "./ice.js";
 import { registerArchiveRoutes } from "./archive.js";
 import { registerAuthRoutes } from "./auth.js";
 import { getUserByToken } from "./db.js";
+import { isDeveloperEmail } from "./developer.js";
 
 const PORT = process.env.PORT || 3001;
+
 // Shows a "developer" badge next to this one account's name in every room,
 // so it can't just be typed into a display name - the server checks the
 // signed-in account behind the socket's own auth token, never anything the
 // client claims directly.
-const DEVELOPER_EMAIL = "adrian.alemany2@gmail.com";
-
 async function isDeveloperToken(authToken) {
   if (typeof authToken !== "string" || !authToken) return false;
   const account = await getUserByToken(authToken);
-  return !!account && account.email.toLowerCase() === DEVELOPER_EMAIL;
+  return !!account && isDeveloperEmail(account.email);
 }
 const MAX_HISTORY = 50;
 const MAX_MESSAGE_LENGTH = 500;

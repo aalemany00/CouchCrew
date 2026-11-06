@@ -22,6 +22,7 @@ import { createClient } from "@libsql/client";
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeveloperEmail } from "./developer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOCAL_DB_PATH = path.join(__dirname, "couchcrew.db");
@@ -88,6 +89,15 @@ export async function getUserById(id) {
   await ready;
   const result = await db.execute({ sql: "SELECT * FROM users WHERE id = ?", args: [id] });
   return row(result);
+}
+
+// Admin-only (see server/auth.js's requireDeveloper) - every account, so
+// the developer's Settings page can list and clean up test accounts.
+export async function getAllUsers() {
+  await ready;
+  const result = await db.execute("SELECT * FROM users ORDER BY created_at ASC");
+  const cols = result.columns;
+  return result.rows.map((r) => Object.fromEntries(cols.map((c, i) => [c, r[i]])));
 }
 
 export async function createUser({ email, password, name, securityQuestion, securityAnswer }) {
@@ -180,5 +190,7 @@ export function toPublicUser(user) {
     avatar: user.avatar,
     bio: user.bio,
     securityQuestion: user.security_question,
+    isDeveloper: isDeveloperEmail(user.email),
+    createdAt: user.created_at,
   };
 }

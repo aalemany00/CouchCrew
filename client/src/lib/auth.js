@@ -150,3 +150,13 @@ export async function resetPassword({ email, securityAnswer, newPassword }) {
   saveSession(body.token, body.user);
   return body.user;
 }
+
+// Admin-only (see server/auth.js's requireDeveloper) - 403s for anyone else.
+export async function listAllAccounts() {
+  const body = await request("/api/admin/users");
+  return body.users;
+}
+
+export async function deleteAccountById(id) {
+  await request(`/api/admin/users/${id}`, { method: "DELETE" });
+}
