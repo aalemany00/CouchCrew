@@ -5,6 +5,64 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Real user accounts: sign up/in, change/reset password, account-backed profile
+
+**Who:** Adrian, with Claude Code, on `feature/user-accounts`. Discussed
+scope with Adrian first (two real decisions, not ones to make silently):
+no email service is set up for this project, so "forgot password" uses a
+security question instead of an emailed reset link; account data lives in
+a single SQLite file on the server (`node:sqlite`, built into Node - no
+new dependency, no native module to build/deploy), which resets on a
+redeploy to an ephemeral host like Render's free tier - an accepted
+tradeoff for a course project, not something production-grade.
+
+**What we built:**
+- `server/db.js`: users + sessions tables. Passwords and security-question
+  answers are hashed with `scryptSync` (built into `node:crypto`, no
+  bcrypt dependency) with a per-secret random salt, compared with
+  `timingSafeEqual`. Never stored or returned in plain text.
+- `server/auth.js`: `POST /api/auth/signup`, `/login`, `/logout`,
+  `GET /me`, `POST /security-question` + `/reset-password` (the two-step
+  forgot-password flow), `POST /change-password` (requires the current
+  password), `PUT /profile` (name/avatar/bio only - this route physically
+  cannot touch email or password).
+- `client/lib/auth.js` + new `AccountSection.jsx` (shown in Settings,
+  above the profile form): sign in / sign up / forgot password when
+  signed out; email (never shown to anyone else) + change-password when
+  signed in.
+- **"Profile translates over to rooms, except email/password"**: signing
+  in copies the account's name/avatar/bio into the exact same
+  `localStorage` keys (`couchcrew:name`/`avatar`/`bio`) that
+  `ProfileForm`/`RoomView`/`ChatPanel` already read and sync to rooms -
+  none of that existing code needed to change or even know accounts
+  exist. Saving the profile form while signed in also pushes the update
+  back to the account (`PUT /api/auth/profile`), so it's there next time
+  you sign in anywhere. Email and password are only ever handled by
+  `auth.js`'s own routes - they're never part of `room:join`/
+  `profile:update`'s payload, so there's no path for either to reach a
+  room or another viewer.
+
+**Verified end to end:** signed up a new account, confirmed the profile
+form was pre-filled with the account's name immediately after; signed
+out, used "Forgot Password" with the security question, got the
+right question back, answered it (case-insensitively - typed "jaws" for
+an answer saved as "Jaws") and reset the password, which signed back in
+automatically; changed the bio while signed in and confirmed via
+`/api/auth/me` that it persisted server-side; created a room and opened
+the member profile card - the account's bio showed up there correctly.
+
+**Known limitations, accepted for scope:** no email verification or
+real password-reset email (the security-question tradeoff above); no
+rate-limiting on login/signup attempts; the security-question reset
+necessarily confirms whether an email has an account (a real emailed
+link wouldn't do that) - normal for this kind of lightweight reset flow,
+just worth knowing; editing profile from the in-room settings drawer
+updates the room and `localStorage` but doesn't push back to the account
+record (only the standalone Settings page's save does) - a real gap if
+someone edits their bio mid-room and expects it saved to their account.
+
+---
+
 ## 2026-11-06 — Archive.org search: cut the clutter, surface popular results
 
 **Who:** Adrian, with Claude Code, on `feature/archive-search-quality`.
