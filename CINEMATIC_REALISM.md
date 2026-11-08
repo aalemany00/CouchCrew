@@ -6,19 +6,19 @@ camera/mic/screen sharing, member presence, chat, and theme-sync protocol.
 
 ## What changed
 
-- \`client/src/components/CinematicScenery.jsx\` contains eight distinct
+- `client/src/components/CinematicScenery.jsx` contains eight distinct
   decorative SVG theater environments. They are real SVG markup with shared
   perspective geometry, 3D-ish chairs, gradients, grain, architectural
   details, shadows, and warm/cool light sources.
-- \`client/src/components/PixelTheaterScenery.jsx\` now chooses that SVG for
+- `client/src/components/PixelTheaterScenery.jsx` now chooses that SVG for
   the seven non-classic themes. The **classic** room/lobby still uses the
-  existing handcrafted \`CinemaBackdrop\` / \`CinemaEntrance\` work.
+  existing handcrafted `CinemaBackdrop` / `CinemaEntrance` work.
 - Theme cards use the **actual rendered theater component**, not scaled
   screenshots or a single cropped image reused for each theme.
-- \`client/src/cinematic-realism.css\` refines UI materials (brushed-dark
+- `client/src/cinematic-realism.css` refines UI materials (brushed-dark
   frame, glass-like surfaces, restrained trim), backdrop and poster rendering,
   and implements a real (local-only) lighting preference.
-- The House lights dropdown in \`RoomView.jsx\` switches between
+- The House lights dropdown in `RoomView.jsx` switches between
   **Pre-show / Movie / Intermission**. Only the current user's scene changes;
   the choice persists in their browser. No socket event or backend change.
 
@@ -45,12 +45,12 @@ Theme changes alter **architecture and props**, not merely hue:
 
 1. Keep the **functional** room components untouched.
 2. Change shared geometry (screen, aisles, seats, walls) in
-   \`CinematicScenery.jsx\`, not in \`WatchPlayer.jsx\`.
-3. Change scene-specific objects in \`VenueProps\`, and per-theme materials
-   in \`LOOKS\`.
+   `CinematicScenery.jsx`, not in `WatchPlayer.jsx`.
+3. Change scene-specific objects in `VenueProps`, and per-theme materials
+   in `LOOKS`.
 4. Change UI materials, overlays and lighting in
-   \`cinematic-realism.css\` rather than piling more \`!important\` overrides
-   into \`immersive-theater.css\`.
+   `cinematic-realism.css` rather than piling more `!important` overrides
+   into `immersive-theater.css`.
 5. Always test 360px mobile, 768px tablet, 1280px desktop,
    normal and reduced-motion settings; verify that theme-card previews
    remain different and actual player controls remain clickable.
@@ -72,5 +72,5 @@ single screenshot as the app UI; it breaks responsiveness and function.
 - Theme selection remains server-controlled by room leader.
 - Room invite link, YouTube playback, media devices, chat work normally.
 - House lights changes only the local background and persists on refresh.
-- No visual SVG intercepts pointer input (\`pointer-events:none\`).
+- No visual SVG intercepts pointer input (`pointer-events:none`).
 - Reduced-motion preference disables scene ambient animation.
