@@ -56,10 +56,10 @@
    sit below it, with the tiles "seated" in chairs. The wrappers .watch-player
    and .video-panel use display:contents so their children (real components,
    unchanged) can be ordered as one stack. */
-@media (min-width: 900px) {
-  .cinema-shell[data-theme="classic"] .room-view { max-width: 1240px; }
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .room-view { max-width: 1240px; }
 
-  .cinema-shell[data-theme="classic"] .screen-stack {
+  .cinema-shell[data-theme] .screen-stack {
     --sw: clamp(520px, 52vw, 860px);          /* picture width */
     --inset: 56px;                            /* bulbs + curtain gutter */
     --fh: calc(var(--sw) * .5625 + var(--inset) * 2); /* marquee frame height */
@@ -69,7 +69,7 @@
     padding: calc(var(--fh) + 18px) 0 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none;
   }
   /* marquee frame (drawn by ::before, behind everything) */
-  .cinema-shell[data-theme="classic"] .screen-stack::before {
+  .cinema-shell[data-theme] .screen-stack::before {
     content: ""; position: absolute; left: 0; top: 0; width: 100%; height: var(--fh); z-index: 0; border-radius: 12px; pointer-events: none;
     background:
       var(--bulb) 0 0 / 26px 26px repeat-x,
@@ -80,7 +80,7 @@
     box-shadow: 0 0 60px rgba(255,170,80,.42), 0 0 140px rgba(255,170,80,.2);
   }
   /* curtains (::after is the pair of panels via two backgrounds) */
-  .cinema-shell[data-theme="classic"] .screen-stack::after {
+  .cinema-shell[data-theme] .screen-stack::after {
     content: ""; position: absolute; left: 26px; right: 26px; top: 26px; height: calc(var(--fh) - 52px); z-index: 4; pointer-events: none;
     /* fixed-pixel pleats: folds keep their size while the panel narrows, so it reads as cloth, not a gradient */
     --pleat: repeating-linear-gradient(90deg, #4a0813 0, #8e1a30 7px, #d9344f 15px, #f0566f 18px, #c22a44 22px, #7a1428 31px, #3a0610 38px, #4a0813 40px);
@@ -97,21 +97,21 @@
     to   { background-size: 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%; }
   }
 
-  .cinema-shell[data-theme="classic"] .watch-player,
-  .cinema-shell[data-theme="classic"] .video-panel { display: contents; }
-  .cinema-shell[data-theme="classic"] .watch-player > h2,
-  .cinema-shell[data-theme="classic"] .video-panel > h2 {
+  .cinema-shell[data-theme] .watch-player,
+  .cinema-shell[data-theme] .video-panel { display: contents; }
+  .cinema-shell[data-theme] .watch-player > h2,
+  .cinema-shell[data-theme] .video-panel > h2 {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; /* kept for screen readers */
   }
 
   /* The picture: real player (or film leader when nothing is loaded). */
-  .cinema-shell[data-theme="classic"] .watch-frame,
-  .cinema-shell[data-theme="classic"] .watch-player::before {
+  .cinema-shell[data-theme] .watch-frame,
+  .cinema-shell[data-theme] .watch-player::before {
     position: absolute; left: var(--inset); top: var(--inset); width: var(--sw); height: calc(var(--sw) * .5625); z-index: 1;
     margin: 0; border: 0; outline: 0; border-radius: 3px; box-shadow: none; box-sizing: border-box;
   }
-  .cinema-shell[data-theme="classic"] .watch-frame[hidden] { position: absolute; visibility: hidden; }
-  .cinema-shell[data-theme="classic"] .watch-player::before {
+  .cinema-shell[data-theme] .watch-frame[hidden] { position: absolute; visibility: hidden; }
+  .cinema-shell[data-theme] .watch-player::before {
     content: "3"; display: grid; place-items: center; font: 400 clamp(72px, 12vw, 170px) / 1 Georgia, serif; color: #1e1810;
     background:
       radial-gradient(circle, transparent 0 16%, #2a2418 16.4% 17.4%, transparent 17.8% 25%, #2a2418 25.4% 26.2%, transparent 26.6%),
@@ -122,76 +122,76 @@
     animation: cinema-count 3s steps(1, end) infinite; /* 3-2-1 where animatable `content` is supported */
   }
   @keyframes cinema-count { 0% { content: "3"; } 33.4% { content: "2"; } 66.7% { content: "1"; } }
-  .cinema-shell[data-theme="classic"] .watch-player:has(.watch-frame:not([hidden]))::before { display: none; }
+  .cinema-shell[data-theme] .watch-player:has(.watch-frame:not([hidden]))::before { display: none; }
 
   /* Controls row, then the link bar, then notes, then the seated call tiles. */
-  .cinema-shell[data-theme="classic"] .video-join,
-  .cinema-shell[data-theme="classic"] .video-controls,
-  .cinema-shell[data-theme="classic"] .watch-player > .room-tag,
-  .cinema-shell[data-theme="classic"] .watch-error,
-  .cinema-shell[data-theme="classic"] .video-notice,
-  .cinema-shell[data-theme="classic"] .video-error,
-  .cinema-shell[data-theme="classic"] .video-diag-count { position: relative; z-index: 2; flex: 0 0 100%; margin: 0; text-align: center; }
-  .cinema-shell[data-theme="classic"] .video-controls { order: 1; display: flex; justify-content: center; gap: 12px; }
-  .cinema-shell[data-theme="classic"] .video-join { order: 1; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; }
-  .cinema-shell[data-theme="classic"] .video-join > p { flex: 0 0 100%; margin: 0; font-size: .9rem; opacity: .8; }
-  .cinema-shell[data-theme="classic"] .video-controls button {
+  .cinema-shell[data-theme] .video-join,
+  .cinema-shell[data-theme] .video-controls,
+  .cinema-shell[data-theme] .watch-player > .room-tag,
+  .cinema-shell[data-theme] .watch-error,
+  .cinema-shell[data-theme] .video-notice,
+  .cinema-shell[data-theme] .video-error,
+  .cinema-shell[data-theme] .video-diag-count { position: relative; z-index: 2; flex: 0 0 100%; margin: 0; text-align: center; }
+  .cinema-shell[data-theme] .video-controls { order: 1; display: flex; justify-content: center; gap: 12px; }
+  .cinema-shell[data-theme] .video-join { order: 1; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; }
+  .cinema-shell[data-theme] .video-join > p { flex: 0 0 100%; margin: 0; font-size: .9rem; opacity: .8; }
+  .cinema-shell[data-theme] .video-controls button {
     flex: 0 1 auto; min-height: 44px; padding: 0 20px; border-radius: 23px; color: #f3e9dc;
     background: rgba(10,6,10,.75); border: 1px solid rgba(255,255,255,.25); box-shadow: 0 4px 14px rgba(0,0,0,.6);
   }
-  .cinema-shell[data-theme="classic"] .video-controls button.off { background: rgba(120,24,40,.85); }
-  .cinema-shell[data-theme="classic"] .video-controls button.active { background: rgba(40,120,70,.85); }
-  .cinema-shell[data-theme="classic"] .video-controls button.leave { background: #c8302f; border-color: #ff8a80; }
+  .cinema-shell[data-theme] .video-controls button.off { background: rgba(120,24,40,.85); }
+  .cinema-shell[data-theme] .video-controls button.active { background: rgba(40,120,70,.85); }
+  .cinema-shell[data-theme] .video-controls button.leave { background: #c8302f; border-color: #ff8a80; }
 
-  .cinema-shell[data-theme="classic"] .watch-provider-dropdown { order: 2; position: relative; z-index: 3; margin: 0; }
-  .cinema-shell[data-theme="classic"] .watch-load { order: 2; position: relative; z-index: 2; flex: 1 1 360px; margin: 0; }
-  .cinema-shell[data-theme="classic"] .youtube-finder,
-  .cinema-shell[data-theme="classic"] .archive-browse-links { order: 2; position: relative; z-index: 2; margin: 0; }
-  .cinema-shell[data-theme="classic"] .watch-player > .room-tag { order: 3; }
-  .cinema-shell[data-theme="classic"] .watch-error { order: 3; }
-  .cinema-shell[data-theme="classic"] .youtube-search-results { order: 3; position: relative; z-index: 3; flex: 0 0 100%; }
-  .cinema-shell[data-theme="classic"] .video-notice, .cinema-shell[data-theme="classic"] .video-error { order: 3; }
+  .cinema-shell[data-theme] .watch-provider-dropdown { order: 2; position: relative; z-index: 3; margin: 0; }
+  .cinema-shell[data-theme] .watch-load { order: 2; position: relative; z-index: 2; flex: 1 1 360px; margin: 0; }
+  .cinema-shell[data-theme] .youtube-finder,
+  .cinema-shell[data-theme] .archive-browse-links { order: 2; position: relative; z-index: 2; margin: 0; }
+  .cinema-shell[data-theme] .watch-player > .room-tag { order: 3; }
+  .cinema-shell[data-theme] .watch-error { order: 3; }
+  .cinema-shell[data-theme] .youtube-search-results { order: 3; position: relative; z-index: 3; flex: 0 0 100%; }
+  .cinema-shell[data-theme] .video-notice, .cinema-shell[data-theme] .video-error { order: 3; }
 
   /* Seated call tiles: each tile sits in a theater chair (back + armrests). */
-  .cinema-shell[data-theme="classic"] .video-grid {
+  .cinema-shell[data-theme] .video-grid {
     order: 5; flex: 0 0 100%; position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 70px 80px;
     padding: 30px 0 150px; overflow: hidden; margin-top: 20px;
   }
-  .cinema-shell[data-theme="classic"] .video-grid.has-screen .video-tile.screen { flex: 0 0 min(100%, 520px); aspect-ratio: 16 / 9; }
-  .cinema-shell[data-theme="classic"] .video-tile {
+  .cinema-shell[data-theme] .video-grid.has-screen .video-tile.screen { flex: 0 0 min(100%, 520px); aspect-ratio: 16 / 9; }
+  .cinema-shell[data-theme] .video-tile {
     position: relative; flex: 0 0 200px; width: 200px; aspect-ratio: 3 / 2; overflow: visible; border-radius: 12px;
     background: #120a0d; border: 2px solid rgba(255,190,120,.45); box-shadow: 0 8px 26px rgba(0,0,0,.7);
   }
-  .cinema-shell[data-theme="classic"] .video-tile.screen { width: auto; }
-  .cinema-shell[data-theme="classic"] .video-tile-name { top: .4rem; bottom: auto; }  /* chair back covers the bottom edge */
-  .cinema-shell[data-theme="classic"] .video-tile video,
-  .cinema-shell[data-theme="classic"] .video-tile-initial { border-radius: 10px; }
-  .cinema-shell[data-theme="classic"] .video-tile::after {   /* chair back, in front of the lower part of the tile */
+  .cinema-shell[data-theme] .video-tile.screen { width: auto; }
+  .cinema-shell[data-theme] .video-tile-name { top: .4rem; bottom: auto; }  /* chair back covers the bottom edge */
+  .cinema-shell[data-theme] .video-tile video,
+  .cinema-shell[data-theme] .video-tile-initial { border-radius: 10px; }
+  .cinema-shell[data-theme] .video-tile::after {   /* chair back, in front of the lower part of the tile */
     content: ""; position: absolute; z-index: 3; left: -30px; right: -30px; top: calc(100% - 12px); height: 130px; pointer-events: none;
     border-radius: 44px 44px 10px 10px;
     background: linear-gradient(115deg, rgba(255,255,255,.2), transparent 45%) 0 0 / 100% 46% no-repeat, linear-gradient(#9a2a3e 0%, #601626 40%, #2c0811 100%);
     box-shadow: 0 -12px 30px rgba(0,0,0,.65), inset 0 6px 6px rgba(255,210,200,.4), inset 10px 0 14px rgba(0,0,0,.35), inset -10px 0 14px rgba(0,0,0,.35);
   }
-  .cinema-shell[data-theme="classic"] .video-tile::before {  /* armrests peeking out at the sides */
+  .cinema-shell[data-theme] .video-tile::before {  /* armrests peeking out at the sides */
     content: ""; position: absolute; z-index: 2; left: -60px; right: -60px; top: calc(100% + 18px); height: 96px; pointer-events: none;
     background:
       linear-gradient(90deg, #1a0a0f, #3a1a22 50%, #1a0a0f) 0 0 / 48px 100% no-repeat,
       linear-gradient(90deg, #1a0a0f, #3a1a22 50%, #1a0a0f) 100% 0 / 48px 100% no-repeat;
     border-radius: 14px 14px 4px 4px;
   }
-  .cinema-shell[data-theme="classic"] .video-tile.screen::before,
-  .cinema-shell[data-theme="classic"] .video-tile.screen::after { display: none; }
-  .cinema-shell[data-theme="classic"] .video-diag-count { order: 6; opacity: .6; }
+  .cinema-shell[data-theme] .video-tile.screen::before,
+  .cinema-shell[data-theme] .video-tile.screen::after { display: none; }
+  .cinema-shell[data-theme] .video-diag-count { order: 6; opacity: .6; }
 }
 
-/* Narrow windows keep a simple stacked screen (no chairs, no draw-back). */
-@media (max-width: 899px) {
-  .cinema-shell[data-theme="classic"] .screen-stack { padding: 14px; border-radius: 12px; box-shadow: 0 0 40px rgba(255,170,80,.3); }
-  .cinema-shell[data-theme="classic"] .video-tile { border-radius: 10px; border: 2px solid rgba(255,190,120,.35); }
+/* Very narrow windows (< 380px) keep a simple stacked screen. */
+@media (max-width: 379px) {
+  .cinema-shell[data-theme] .screen-stack { padding: 14px; border-radius: 12px; box-shadow: 0 0 40px rgba(255,170,80,.3); }
+  .cinema-shell[data-theme] .video-tile { border-radius: 10px; border: 2px solid rgba(255,190,120,.35); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cinema-shell[data-theme="classic"] .screen-stack::after { animation: none; background-size: 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%; }
-  .cinema-shell[data-theme="classic"] .watch-player::before { animation: none; }
+  .cinema-shell[data-theme] .screen-stack::after { animation: none; background-size: 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%, 30px 100%; }
+  .cinema-shell[data-theme] .watch-player::before { animation: none; }
 }
 
 /* ---------- Room: fit-to-window ("one screen, like a real theater") ----------
@@ -200,53 +200,53 @@
    seated along the bottom edge like the front row (chairs run off-screen).
    Shorter windows (< 540px tall) and screen-sharing fall back to the flowing
    layout above and scroll normally. */
-@media (min-width: 900px) and (min-height: 540px) {
-  .cinema-shell[data-theme="classic"] .room-view { min-height: 100dvh; padding-top: .5rem; padding-bottom: 0; }
-  .cinema-shell[data-theme="classic"] .room-view > header { padding: 4px 12px; margin: 0 auto 8px; max-width: 1240px; }
-  .cinema-shell[data-theme="classic"] .marquee-title { font-size: 1.5rem; }
-  .cinema-shell[data-theme="classic"] .room-grid { margin-top: 0; }
-  .cinema-shell[data-theme="classic"] .screen-stack {
+@media (min-width: 600px) and (min-height: 540px) {
+  .cinema-shell[data-theme] .room-view { min-height: 100dvh; padding-top: .5rem; padding-bottom: 0; }
+  .cinema-shell[data-theme] .room-view > header { padding: 4px 12px; margin: 0 auto 8px; max-width: 1240px; }
+  .cinema-shell[data-theme] .marquee-title { font-size: 1.5rem; }
+  .cinema-shell[data-theme] .room-grid { margin-top: 0; }
+  .cinema-shell[data-theme] .screen-stack {
     --t0: clamp(80px, 19.5dvh, 176px);           /* front-row seat size, scales with window height */
     --inset: clamp(30px, 4.9dvh, 44px);           /* bulb band + curtain gutter */
     --sw: clamp(160px, min(58vw, calc((100dvh - 254px - 1.167 * var(--t0) - 2 * var(--inset)) * 1.7778)), 960px);
     width: max(calc(var(--sw) + var(--inset) * 2), 780px); /* control rows stay wide when the picture shrinks */
   }
   /* Front-row tiles: pinned to the bottom of the window. */
-  .cinema-shell[data-theme="classic"] .video-grid:not(.has-screen) {
+  .cinema-shell[data-theme] .video-grid:not(.has-screen) {
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; height: 205px; padding: 14px 0 0; margin: 0; overflow: hidden;
     pointer-events: none; z-index: 3; align-items: flex-start; gap: 0 90px;
   }
-  .cinema-shell[data-theme="classic"] .video-grid:not(.has-screen) .video-tile { pointer-events: auto; flex: 0 0 176px; width: 176px; }
-  .cinema-shell[data-theme="classic"] .video-diag-count { display: none; }
-  .cinema-shell[data-theme="classic"] .watch-player > .room-tag { font-size: .8rem; line-height: 1.1; }
+  .cinema-shell[data-theme] .video-grid:not(.has-screen) .video-tile { pointer-events: auto; flex: 0 0 176px; width: 176px; }
+  .cinema-shell[data-theme] .video-diag-count { display: none; }
+  .cinema-shell[data-theme] .watch-player > .room-tag { font-size: .8rem; line-height: 1.1; }
   /* Empty front row before you join the call: chair backs along the bottom edge. */
-  .cinema-shell[data-theme="classic"] .room-view::after {
+  .cinema-shell[data-theme] .room-view::after {
     content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 120px; z-index: 1; pointer-events: none;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120' viewBox='0 0 300 120'%3E%3Cdefs%3E%3ClinearGradient id='c' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%239a2a3e'/%3E%3Cstop offset='.4' stop-color='%23601626'/%3E%3Cstop offset='1' stop-color='%232c0811'/%3E%3C/linearGradient%3E%3ClinearGradient id='a' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%231a0a0f'/%3E%3Cstop offset='.5' stop-color='%233a1a22'/%3E%3Cstop offset='1' stop-color='%231a0a0f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='44' width='46' height='90' rx='12' fill='url(%23a)'/%3E%3Crect x='250' y='44' width='46' height='90' rx='12' fill='url(%23a)'/%3E%3Crect x='46' y='14' width='208' height='130' rx='44' fill='url(%23c)'/%3E%3Cpath d='M56 40q0-24 30-26h60' stroke='white' stroke-opacity='.22' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x center bottom / 300px 120px;
   }
-  .cinema-shell[data-theme="classic"] .room-view:has(.video-grid:not(.has-screen))::after { display: none; }
+  .cinema-shell[data-theme] .room-view:has(.video-grid:not(.has-screen))::after { display: none; }
 }
 
 /* Marquee, curtains and picture are centered on the stack (not full-width), so
    the controls/link bar can be wider than a small picture. */
-@media (min-width: 900px) {
-  .cinema-shell[data-theme="classic"] .screen-stack::before {
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .screen-stack::before {
     left: 50%; width: calc(var(--sw) + var(--inset) * 2); transform: translateX(-50%);
   }
-  .cinema-shell[data-theme="classic"] .screen-stack::after {
+  .cinema-shell[data-theme] .screen-stack::after {
     left: calc(50% - var(--sw) / 2 - var(--inset) + 26px); right: calc(50% - var(--sw) / 2 - var(--inset) + 26px);
   }
-  .cinema-shell[data-theme="classic"] .watch-frame,
-  .cinema-shell[data-theme="classic"] .watch-player::before { left: 50%; margin-left: calc(var(--sw) / -2); }
+  .cinema-shell[data-theme] .watch-frame,
+  .cinema-shell[data-theme] .watch-player::before { left: 50%; margin-left: calc(var(--sw) / -2); }
 }
 
 /* "Room: x" title truly centered in the header bar (the side groups differ in width). */
 @media (min-width: 900px) {
-  .cinema-shell[data-theme="classic"] .room-header-top { position: relative; min-height: 48px; }
-  .cinema-shell[data-theme="classic"] .marquee-title {
+  .cinema-shell[data-theme] .room-header-top { position: relative; min-height: 48px; }
+  .cinema-shell[data-theme] .marquee-title {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap;
   }
-  .cinema-shell[data-theme="classic"] .marquee-title:active { transform: translate(-50%, -50%) scale(0.97); }
+  .cinema-shell[data-theme] .marquee-title:active { transform: translate(-50%, -50%) scale(0.97); }
 }
 
 /* ---------- Seated tiles: join animation + auto-shrink ----------
@@ -255,39 +255,39 @@
    screen. A newly joined person's chair slides in from the right while the
    others glide over to make room. --n is the number of seats, counted with
    :has(). */
-@media (min-width: 900px) {
-  .cinema-shell[data-theme="classic"] .video-grid {
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .video-grid {
     --n: 3;
     --t: min(var(--t0, 176px), calc((100vw - 120px) / (var(--n) * 1.5)));
     gap: 0 calc(var(--t) * .5);
   }
-  .cinema-shell[data-theme="classic"] .video-grid:has(> .video-tile:nth-child(4)) { --n: 4; }
-  .cinema-shell[data-theme="classic"] .video-grid:has(> .video-tile:nth-child(5)) { --n: 5; }
-  .cinema-shell[data-theme="classic"] .video-grid:has(> .video-tile:nth-child(6)) { --n: 6; }
-  .cinema-shell[data-theme="classic"] .video-grid:has(> .video-tile:nth-child(7)) { --n: 7; }
-  .cinema-shell[data-theme="classic"] .video-grid:has(> .video-tile:nth-child(8)) { --n: 8; }
+  .cinema-shell[data-theme] .video-grid:has(> .video-tile:nth-child(4)) { --n: 4; }
+  .cinema-shell[data-theme] .video-grid:has(> .video-tile:nth-child(5)) { --n: 5; }
+  .cinema-shell[data-theme] .video-grid:has(> .video-tile:nth-child(6)) { --n: 6; }
+  .cinema-shell[data-theme] .video-grid:has(> .video-tile:nth-child(7)) { --n: 7; }
+  .cinema-shell[data-theme] .video-grid:has(> .video-tile:nth-child(8)) { --n: 8; }
 
-  .cinema-shell[data-theme="classic"] .video-grid:not(.has-screen) {
+  .cinema-shell[data-theme] .video-grid:not(.has-screen) {
     gap: 0 calc(var(--t) * .5);
     height: calc(var(--t) * 1.2 + 14px); align-items: flex-end; padding: 14px 0 calc(var(--t) * .5);
     box-sizing: content-box;
   }
-  .cinema-shell[data-theme="classic"] .video-grid:not(.has-screen) .video-tile,
-  .cinema-shell[data-theme="classic"] .video-tile:not(.screen) {
+  .cinema-shell[data-theme] .video-grid:not(.has-screen) .video-tile,
+  .cinema-shell[data-theme] .video-tile:not(.screen) {
     flex: 0 0 var(--t); width: var(--t); border-radius: calc(var(--t) * .07);
     transition: flex-basis .45s ease, width .45s ease, margin .45s ease;
     animation: cinema-seat-in .75s cubic-bezier(.2, .8, .2, 1) both;
   }
-  .cinema-shell[data-theme="classic"] .video-tile:not(.screen)::after {
+  .cinema-shell[data-theme] .video-tile:not(.screen)::after {
     left: calc(var(--t) * -.17); right: calc(var(--t) * -.17); top: calc(100% - var(--t) * .07); height: calc(var(--t) * .74);
     border-radius: calc(var(--t) * .25) calc(var(--t) * .25) calc(var(--t) * .06) calc(var(--t) * .06);
   }
-  .cinema-shell[data-theme="classic"] .video-tile:not(.screen)::before {
+  .cinema-shell[data-theme] .video-tile:not(.screen)::before {
     left: calc(var(--t) * -.34); right: calc(var(--t) * -.34); top: calc(100% + var(--t) * .1); height: calc(var(--t) * .55);
     background-size: calc(var(--t) * .27) 100%, calc(var(--t) * .27) 100%;
   }
-  .cinema-shell[data-theme="classic"] .video-tile-initial { font-size: calc(var(--t) / 4.5); }
-  .cinema-shell[data-theme="classic"] .video-tile-name { font-size: clamp(.55rem, calc(var(--t) / 14), .8rem); }
+  .cinema-shell[data-theme] .video-tile-initial { font-size: calc(var(--t) / 4.5); }
+  .cinema-shell[data-theme] .video-tile-name { font-size: clamp(.55rem, calc(var(--t) / 14), .8rem); }
 }
 @keyframes cinema-seat-in {
   from { flex-basis: 0; width: 0; margin-left: calc(var(--t) * -.5); opacity: 0; transform: translateX(calc(var(--t) * 1.8)) scale(.7); }
@@ -295,5 +295,83 @@
   to   { flex-basis: var(--t); width: var(--t); margin-left: 0; opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cinema-shell[data-theme="classic"] .video-tile:not(.screen) { animation: none; transition: none; }
+  .cinema-shell[data-theme] .video-tile:not(.screen) { animation: none; transition: none; }
 }
+
+
+/* ---------- Narrow windows and phones (380-899px wide) ----------
+   Same theater, sized from the window width: the picture fills the width, the
+   control rows wrap, and the seats shrink to fit. From 600px wide (and 540px
+   tall) it also fits on one screen; smaller phones scroll the page. */
+@media (min-width: 380px) and (max-width: 899px) {
+  .cinema-shell[data-theme] .room-view { padding-left: 8px; padding-right: 8px; }
+  .cinema-shell[data-theme] .screen-stack {
+    --inset: 30px;
+    --sw: min(calc(100vw - 2 * var(--inset) - 32px), 860px);
+    width: 100%; gap: 8px 10px;
+  }
+  .cinema-shell[data-theme] .video-controls { gap: 8px; flex-wrap: wrap; }
+  .cinema-shell[data-theme] .video-controls button { min-height: 40px; padding: 0 14px; font-size: .85rem; }
+  .cinema-shell[data-theme] .watch-load { flex: 1 1 200px; }
+  .cinema-shell[data-theme] .watch-player::before { font-size: clamp(48px, 16vw, 120px); }
+}
+@media (min-width: 600px) and (max-width: 899px) and (min-height: 540px) {
+  .cinema-shell[data-theme] .screen-stack {
+    /* 330px = header (wraps to two rows here) + wrapped control/link rows; 270px once the header fits on one row */
+    --sw: clamp(150px, min(calc(100vw - 2 * var(--inset) - 32px), calc((100dvh - 330px - 1.167 * var(--t0) - 2 * var(--inset)) * 1.7778)), 860px);
+    width: 100%;
+  }
+}
+@media (min-width: 700px) and (max-width: 899px) and (min-height: 540px) {
+  .cinema-shell[data-theme] .screen-stack {
+    --sw: clamp(150px, min(calc(100vw - 2 * var(--inset) - 32px), calc((100dvh - 270px - 1.167 * var(--t0) - 2 * var(--inset)) * 1.7778)), 860px);
+  }
+}
+
+
+/* ---------- Every theme uses the cinema look ----------
+   The genre themes only tint it: their accent color washes over the backdrop
+   and the entrance art (Default/classic stays untinted). */
+.cinema-shell:not([data-theme="classic"]) .cinema-backdrop::after,
+.cinema-shell:not([data-theme="classic"]) .ce-art::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%),
+    linear-gradient(color-mix(in srgb, var(--accent) 12%, transparent), transparent 45%);
+}
+
+/* ---------- Entrance: side fill + compact (narrow/phone) version ---------- */
+/* Side shadows: darken the filled side areas and fade into the stage edge so the join reads as theater darkness. */
+.ce-root::before, .ce-root::after { content: ""; position: absolute; top: 0; bottom: 0; z-index: 1; pointer-events: none; }
+.ce-root::before { left: 0; width: calc(var(--gap) + 70px); background: linear-gradient(90deg, rgba(5,3,10,.82), rgba(5,3,10,.7) var(--gap), transparent); }
+.ce-root::after { right: 0; width: calc(var(--gap) + 70px); background: linear-gradient(270deg, rgba(5,3,10,.82), rgba(5,3,10,.7) var(--gap), transparent); }
+/* When the window is wider than the 1280x820 stage's aspect ratio, the stage is
+   sized to the window height and centered; this repeats the wall and floor
+   (same look as the art, in the same scale) so there are no empty side bars. */
+.ce-fill { position: absolute; left: 0; right: 0; top: calc(var(--s) * -40px); height: calc(var(--s) * 820px);
+  background: linear-gradient(#150a10, #2a0f16 55%, #0a0508); overflow: hidden; }
+.ce-fill::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: calc(var(--s) * 560px);
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.4) 0 calc(var(--s) * 2px), rgba(255,190,120,.05) calc(var(--s) * 2px) calc(var(--s) * 4px), transparent calc(var(--s) * 4px) calc(var(--s) * 82px)),
+    radial-gradient(ellipse at 50% 30%, rgba(255,170,80,.30), transparent 65%); }
+.ce-fill::after { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--s) * 556px); bottom: 0;
+  border-top: calc(var(--s) * 8px) solid #8a6a38;
+  background:
+    linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.85)),
+    repeating-linear-gradient(45deg, rgba(255,200,120,.07) 0 calc(var(--s) * 2px), transparent calc(var(--s) * 2px) calc(var(--s) * 22px)),
+    repeating-linear-gradient(-45deg, rgba(255,200,120,.07) 0 calc(var(--s) * 2px), transparent calc(var(--s) * 2px) calc(var(--s) * 22px)),
+    #2a0a12; }
+
+.cm-root { max-width: 560px; margin: 0 auto; padding: 18px 16px 40px; display: grid; gap: 16px; color: #f3e9dc; }
+.cm-sign { text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 3px solid #c79b60;
+  background: linear-gradient(#2a0d12, #10050a); box-shadow: 0 0 34px rgba(255,170,80,.4), inset 0 0 22px rgba(255,170,80,.12); }
+.cm-sign h1 { margin: 0; font: 400 clamp(2.2rem, 11vw, 3.4rem) / 1.05 Georgia, serif; color: #ff9a6a; text-shadow: 0 0 18px rgba(255,140,90,.6); }
+.cm-sign p { margin: 6px 0 0; font-size: .72rem; letter-spacing: .3em; color: #f3e9dc; }
+.cm-card { padding: 14px; border-radius: 16px; background: rgba(14,8,12,.72); border: 1px solid rgba(255,190,120,.35); box-shadow: 0 10px 34px rgba(0,0,0,.6); }
+.cm-card h2 { margin: 0 0 12px; text-align: center; font: 400 1rem / 1 Georgia, serif; letter-spacing: .16em; color: #ffd596; }
+.cm-card.door { border-color: #2cff8a66; }
+.cm-card.door h2 { color: #9dffc9; }
+.cm-card .ce-ticket, .cm-card .ce-code { position: relative; left: auto; top: auto; width: 100%; }
+.cm-card .ce-ticket { height: 66px; }
+.cm-card .ce-code { padding: 0; background: none; border: 0; box-shadow: none; }
+.cm-card .ce-code input, .cm-card .ce-code button { height: 44px; font-size: 14px; }
