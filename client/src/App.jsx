@@ -13,6 +13,7 @@ import { claimRoomCode } from "./lib/roomApi";
 import "./App.css";
 import "./immersive-theater.css";
 import "./cinema-default.css";
+import "./cinema-realistic-images.css";
 import PixelTheaterScenery from "./components/PixelTheaterScenery";
 
 function getResumedSession(roomId) {
