@@ -27,6 +27,26 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [leaving, setLeaving] = useState(false); // theatrical pause before actually leaving
   const [roomFull, setRoomFull] = useState(null); // { max } once the server rejects a full room
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Local lighting is a visual preference, never room-synchronized. A visitor
+  // can brighten their own theater without changing anyone else's playback.
+  const [lighting, setLighting] = useState(() => {
+    try {
+      const saved = localStorage.getItem("couchcrew:house-lights");
+      return ["movie", "preshow", "intermission"].includes(saved) ? saved : "preshow";
+    } catch {
+      return "preshow";
+    }
+  });
+
+  function handleLightingChange(event) {
+    const next = event.target.value;
+    setLighting(next);
+    try {
+      localStorage.setItem("couchcrew:house-lights", next);
+    } catch {
+      // Lighting still works in restricted/private browsing.
+    }
+  }
 
   const amLeader = connected && leaderId === socket.id;
   const videoPanelRef = useRef(null);
@@ -225,7 +245,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   }
 
   return (
-    <div className="cinema-shell" data-theme={theme}>
+    <div className="cinema-shell" data-theme={theme} data-lighting={lighting}>
       <PixelTheaterScenery theme={theme} mode="room" />
       <div className="room-view" data-theme={theme}>
       {flourish && <div className={`flourish flourish-${flourish}`} aria-hidden="true" />}
@@ -246,6 +266,14 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             Room: {roomId}
           </h1>
           <div className="room-header-actions">
+            <label className="house-lights">
+              House lights
+              <select aria-label="House lighting (only changes your view)" value={lighting} onChange={handleLightingChange}>
+                <option value="preshow">Pre-show</option>
+                <option value="movie">Movie</option>
+                <option value="intermission">Intermission</option>
+              </select>
+            </label>
             <button type="button" className="secondary" onClick={copyInviteLink}>
               {linkCopied ? "Link copied!" : "Copy invite link"}
             </button>
