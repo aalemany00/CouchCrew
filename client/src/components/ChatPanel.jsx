@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 import { SNACKS } from "../lib/theater";
+import { snackFx } from "../lib/snackFx";
 import MemberProfileCard from "./MemberProfileCard";
 
 const SNACK_CLICKS_TO_POP = 3;
@@ -63,14 +64,16 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
 
   // Easter egg: click the same snack 3 times within 1.2s for a little show.
   // Now a chat thing, not a whole-room header fixture.
-  function handleSnackClick(snack) {
+  function handleSnackClick(snack, el) {
     const now = Date.now();
     const clicks = (snackClicksRef.current[snack.id] || []).filter(
       (t) => now - t < SNACK_CLICK_WINDOW_MS
     );
     clicks.push(now);
     snackClicksRef.current[snack.id] = clicks;
-    if (clicks.length >= SNACK_CLICKS_TO_POP) {
+    const isPop = clicks.length >= SNACK_CLICKS_TO_POP;
+    snackFx(snack.id, el, isPop); // every click gets a sound + little burst; the 3rd is bigger
+    if (isPop) {
       snackClicksRef.current[snack.id] = [];
       onFlourish?.(`snack-${snack.id}`);
       onToast?.(snack.message);
@@ -105,7 +108,7 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
                 type="button"
                 className="snack"
                 title={snack.label}
-                onClick={() => handleSnackClick(snack)}
+                onClick={(e) => handleSnackClick(snack, e.currentTarget)}
               >
                 {snack.emoji}
               </button>

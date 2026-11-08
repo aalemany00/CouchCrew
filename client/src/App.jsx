@@ -12,6 +12,7 @@ import { rememberRecentRoom } from "./lib/recentRooms";
 import { claimRoomCode } from "./lib/roomApi";
 import "./App.css";
 import "./immersive-theater.css";
+import "./cinema-default.css";
 import PixelTheaterScenery from "./components/PixelTheaterScenery";
 
 function getResumedSession(roomId) {
@@ -122,7 +123,7 @@ function App() {
       )}
       {route.page === "settings" && <SettingsPage />}
       {route.page === "help" && <HelpPage />}
-      {route.page === "home" && <HomePage />}
+      {route.page === "home" && <HomePage theme={pendingTheme || "classic"} />}
     </div>
   );
 }
