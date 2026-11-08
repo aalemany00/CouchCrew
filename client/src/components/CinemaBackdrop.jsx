@@ -29,6 +29,8 @@ export default function CinemaBackdrop() {
         style={{ width: W, height: H, transform: `translate(${left}px, ${top}px) scale(${scale})` }}
         dangerouslySetInnerHTML={{ __html: roomHtml }}
       />
+      <img className="cc-photo-auditorium" src="/cinema-assets/auditorium-classic.webp" alt="" aria-hidden="true"
+        onLoad={(e) => e.currentTarget.parentElement.classList.add("cc-photo-loaded")} />
     </div>
   );
 }
