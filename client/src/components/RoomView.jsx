@@ -9,6 +9,8 @@ import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 import RoomSettingsDrawer from "./RoomSettingsDrawer";
+import screenFrame from "../assets/theater-realistic/screen-frame.webp";
+import foregroundSeats from "../assets/theater-realistic/foreground-seats.webp";
 
 const MARQUEE_CLICKS_TO_REVEAL = 5;
 const MARQUEE_CLICK_WINDOW_MS = 2000;
@@ -286,7 +288,10 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             as a single screen, closer to the reference mockups, without
             touching WatchPlayer/VideoPanel's own markup — Henry's upcoming
             WebRTC rebuild of VideoPanel can drop in here unchanged. */}
-        <div className="screen-stack">
+        <div
+          className={theme === "classic" ? "screen-stack screen-stack-framed" : "screen-stack"}
+          style={theme === "classic" ? { "--screen-frame-url": `url(${screenFrame})` } : undefined}
+        >
           <WatchPlayer
             roomId={roomId}
             isLeader={amLeader}
@@ -296,6 +301,9 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
         </div>
       </div>
       <ChatPanel roomId={roomId} onFlourish={playFlourish} onToast={showToast} />
+      {theme === "classic" && (
+        <div className="foreground-seats" aria-hidden="true" style={{ backgroundImage: `url(${foregroundSeats})` }} />
+      )}
     </div>
     </div>
   );

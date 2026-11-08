@@ -9,6 +9,53 @@
 .cinema-backdrop-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .cinema-backdrop-canvas svg { position: absolute; left: 0; top: 0; }
 .cinema-backdrop-canvas .abs { position: absolute; }
+/* Realistic-photo trial (experiment/realistic-theater-art, see LOG.md):
+   covers the hand-drawn canvas, which stays mounted underneath for revert. */
+.cinema-backdrop-photo { position: absolute; inset: 0; background-size: cover; background-position: center bottom; background-repeat: no-repeat; }
+
+/* ---------- Room: screen frame + foreground seats (realistic-photo trial,
+   experiment/realistic-theater-art, see LOG.md) ---------- */
+/* screen-frame.webp has no alpha channel - its "hole" is opaque black, not
+   transparent - so instead of layering it as an overlay, we stretch it to
+   exactly fill .screen-stack and inset the real content (WatchPlayer/
+   VideoPanel) with padding sized to land inside that hole. Percentages are
+   eyeballed from the source image; nudge them if the real player drifts
+   outside the painted frame at a given width. background-size is 100% 100%
+   (not cover) so the padding math stays correct at any container size. */
+/* !important: the existing `.cinema-shell[data-theme="classic"] .screen-stack`
+   responsive rule below (the CSS-drawn marquee/curtain frame) has higher
+   specificity and explicitly sets `background: none` + its own padding, so a
+   plain-specificity override here would be silently discarded - this trial
+   replaces that frame with the photo rather than layering on top of it. */
+.screen-stack-framed {
+  background-color: #000 !important;
+  background-image: var(--screen-frame-url) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  border: 0 !important;
+  padding: 11% 10% 4% 10% !important;
+}
+.screen-stack-framed::before,
+.screen-stack-framed::after {
+  content: none !important;
+}
+
+.foreground-seats {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 150px;
+  z-index: 0;
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+@media (max-width: 820px) {
+  .foreground-seats { height: 90px; }
+}
 .cc-leg { position: absolute; top: 96px; height: 470px; width: 200px; z-index: 0;
   background:
     linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,0) 20px, rgba(0,0,0,0) calc(100% - 46px), rgba(0,0,0,.28) calc(100% - 12px), rgba(0,0,0,.55) calc(100% - 11px), rgba(0,0,0,.3)),
@@ -27,6 +74,11 @@
 .ce-art .glass { background: rgba(14, 8, 12, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .08); }
 .ce-art .btn { display: inline-flex; align-items: center; justify-content: center; font-weight: 500; letter-spacing: .08em; }
+
+/* Realistic-photo trial (experiment/realistic-theater-art, see LOG.md): sits
+   on top of the hand-drawn art (painted first, above), which stays mounted
+   underneath so startEntranceAnimations still has real nodes to animate. */
+.ce-art-photo { background-size: cover; background-position: center; background-repeat: no-repeat; }
 
 /* Real controls laid over the art, in stage coordinates. */
 .ce-ticket { position: absolute; left: 78px; top: 440px; width: 254px; height: 62px; display: flex; align-items: center; padding: 0;

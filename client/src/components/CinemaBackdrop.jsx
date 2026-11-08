@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import roomHtml from "../art/cinemaRoomHtml";
+import auditoriumBackground from "../assets/theater-realistic/auditorium-background.webp";
 
 // Default (classic) theme backdrop: a dark auditorium with pleated side
 // curtains, rows of seats (armrests + cupholders) and an audience whose heads
@@ -24,11 +25,14 @@ export default function CinemaBackdrop() {
   const top = size.h - H * scale;
   return (
     <div className="cinema-backdrop" aria-hidden="true">
+      {/* Hand-drawn SVG stays mounted underneath for a quick revert (just drop
+          the photo div) - see LOG.md, experiment/realistic-theater-art. */}
       <div
         className="cinema-backdrop-canvas"
         style={{ width: W, height: H, transform: `translate(${left}px, ${top}px) scale(${scale})` }}
         dangerouslySetInnerHTML={{ __html: roomHtml }}
       />
+      <div className="cinema-backdrop-photo" style={{ backgroundImage: `url(${auditoriumBackground})` }} />
     </div>
   );
 }

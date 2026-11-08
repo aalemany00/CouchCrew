@@ -5,6 +5,46 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-07 — Realistic-photo theater art, Classic theme only (trial branch)
+
+**Who:** Adrian, with Claude Code, on `experiment/realistic-theater-art`. Not
+merged - this is a trial branch for visual review, not yet a decision to adopt.
+
+**What happened:** Adrian wanted the site to feel more photorealistic instead
+of hand-drawn SVG. Rather than one AI-generated image of the whole site,
+ChatGPT was prompted (prompts drafted by Claude) to produce four separate,
+reusable photo assets: a lobby background, a default auditorium background, an
+ornate screen-frame overlay, and a foreground seat-row overlay. Those four
+images (`client/src/assets/theater-realistic/`) are wired into the **Classic
+theme only**:
+
+- `CinemaEntrance.jsx` (home) - photo lobby background, real ticket button and
+  join-code form unchanged, laid over it.
+- `CinemaBackdrop.jsx` (room) - photo auditorium background.
+- `RoomView.jsx` - the screen-frame photo wraps `.screen-stack` (WatchPlayer +
+  VideoPanel), and the foreground-seats photo is pinned to the bottom of the
+  viewport. Both are classic-theme-only (`theme === "classic"` checks).
+
+**Decisions/gotchas:**
+- The generated frame and seat images have **no alpha channel** - the "empty"
+  area is opaque black, not transparent. Handled by positioning real content
+  (video) exactly inside the frame's black hole via percentage padding,
+  instead of relying on transparency.
+- The existing `.cinema-shell[data-theme="classic"] .screen-stack` responsive
+  CSS (the hand-drawn marquee/curtain frame) has higher specificity and
+  explicitly sets `background: none`, so the photo frame needed `!important`
+  to actually show - otherwise it's silently discarded. See the comment in
+  `cinema-default.css` above `.screen-stack-framed`.
+- The 7 genre themes and their Theme-gallery cards are untouched - this only
+  swaps the Classic theme's art layer. The old hand-drawn SVG art
+  (`cinemaEntranceHtml.js`, `cinemaRoomHtml.js`) stays mounted underneath the
+  photo layers (not deleted) for a one-line revert if the photo look doesn't
+  stick.
+
+**Not yet done:** the screen-frame hole padding (11%/10%/4%/10%) is eyeballed,
+not pixel-measured - may need a small nudge at some widths. Not tested on
+narrow/mobile widths. Not merged to `main`.
+
 ## 2026-11-06 — Admin: list/delete accounts (Settings)
 
 **Who:** Adrian, with Claude Code, on `feature/admin-account-management`.

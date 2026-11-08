@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import entranceArt from "../art/cinemaEntranceHtml";
 import { startEntranceAnimations } from "../art/entranceAnimations";
+import lobbyBackground from "../assets/theater-realistic/lobby-background.webp";
 
 // Default (classic) theme home screen: a theater entrance drawn on a fixed
 // 1280x820 stage that is scaled to the window width. The artwork is
@@ -44,7 +45,12 @@ export default function CinemaEntrance({ onCreate, joinCode, onJoinCodeChange, o
   return (
     <div className="ce-root" ref={rootRef} style={{ top }}>
       <div className="ce-stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, marginTop: -40 * scale }}>
-        <div className="ce-art" ref={artRef} aria-hidden="true" dangerouslySetInnerHTML={{ __html: entranceArt }} />
+        {/* Hand-drawn art stays mounted (so startEntranceAnimations below has
+            real .bulb/etc nodes to animate) but sits under the photo layer -
+            see LOG.md (experiment/realistic-theater-art) for a quick revert:
+            just drop the photo div. */}
+        <div className="ce-art ce-art-drawn" ref={artRef} aria-hidden="true" dangerouslySetInnerHTML={{ __html: entranceArt }} />
+        <div className="ce-art ce-art-photo" aria-hidden="true" style={{ backgroundImage: `url(${lobbyBackground})` }} />
 
         <button type="button" className="ce-ticket" onClick={onCreate}>
           <span className="ce-ticket-main">
