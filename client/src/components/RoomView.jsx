@@ -227,6 +227,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   return (
     <div className="cinema-shell" data-theme={theme}>
       <PixelTheaterScenery theme={theme} mode="room" />
+      {theme === "classic" && <img className="cc-photo-seat-overlay" src="/cinema-assets/foreground-seats.png"
+        alt="" aria-hidden="true" onLoad={(e) => e.currentTarget.parentElement.classList.add("cc-photo-seats-ready")} />
       <div className="room-view" data-theme={theme}>
       {flourish && <div className={`flourish flourish-${flourish}`} aria-hidden="true" />}
       {toast && <div className="toast">{toast.text}</div>}
@@ -287,6 +289,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             touching WatchPlayer/VideoPanel's own markup — Henry's upcoming
             WebRTC rebuild of VideoPanel can drop in here unchanged. */}
         <div className="screen-stack">
+          {theme === "classic" && <img className="cc-photo-screen-frame" src="/cinema-assets/screen-frame.png"
+            alt="" aria-hidden="true" onLoad={(e) => e.currentTarget.parentElement.classList.add("cc-photo-frame-loaded")} />
           <WatchPlayer
             roomId={roomId}
             isLeader={amLeader}
