@@ -1,0 +1,206 @@
+/*
+ * CouchCrew cinematic realism pass
+ * Everything here is reproducible in ordinary browsers. Scenes are inline SVG,
+ * textures are restrained CSS/SVG gradients; no generated screenshot assets.
+ * Imported after cinema-default.css so classic's existing auditorium is kept.
+ */
+.cinema-shell .cinematic-scenery {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100vh;
+  pointer-events: none;
+  overflow: hidden;
+  display: block;
+  image-rendering: auto;
+  transform: translateZ(0);
+  background: #070a0e;
+  transition: filter .8s ease, opacity .8s ease;
+}
+.cinema-shell:has(> .cinematic-scenery)::after {
+  /* Remove the 16-bit scanline overlay from the formerly pixel-art rooms. */
+  background: linear-gradient(180deg, rgba(0,0,0,.28), transparent 28%, rgba(0,0,0,.3) 100%);
+}
+.cinema-shell .cinematic-scenery--poster {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  z-index: 0;
+  filter: saturate(1.08) brightness(1.15);
+}
+.cinema-shell .poster-card .cinematic-scenery--poster {
+  object-fit: cover;
+  object-position: center;
+}
+.cinema-shell .poster-card .pixel-poster-art { opacity: 1; }
+.cinema-shell .poster-card {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(221,185,132,.25);
+  outline: 0;
+  box-shadow: 0 12px 38px rgba(0,0,0,.45), inset 0 1px rgba(255,255,255,.12);
+}
+.cinema-shell .poster-card::after {
+  background: linear-gradient(180deg, transparent 18%, rgba(7,6,9,.14) 32%, rgba(6,5,8,.88) 66%, #050508 100%);
+}
+.cinema-shell .poster-card .poster-label {
+  font-family: Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-shadow: 0 3px 12px #000, 0 1px 2px #000;
+}
+.cinema-shell .poster-card .poster-tagline {
+  color: #e8e1d8;
+  font-size: .78rem;
+  line-height: 1.35;
+}
+.cinema-shell .poster-card:hover {
+  border-color: var(--poster-accent, #ffd6a8);
+  box-shadow: 0 18px 48px #000b, 0 0 25px color-mix(in srgb, var(--poster-accent, #ffd6a8) 28%, transparent);
+}
+
+/* Both the genre lobby and the rooms receive the same physical set.
+   On the classic home page keep CinemaEntrance, which is separately crafted. */
+.cinema-shell:not([data-theme="classic"]) .home-page,
+.cinema-shell:not([data-theme="classic"]) .page,
+.cinema-shell:not([data-theme="classic"]) .room-view {
+  text-shadow: 0 2px 12px #000b;
+}
+.cinema-shell:not([data-theme="classic"]) .nav-bar {
+  background: linear-gradient(180deg, rgba(12,13,18,.96), rgba(14,13,18,.87));
+  border-bottom: 1px solid color-mix(in srgb, var(--scene-accent) 30%, transparent);
+  box-shadow: 0 18px 44px rgba(0,0,0,.3);
+  backdrop-filter: blur(18px);
+}
+.cinema-shell:not([data-theme="classic"]) .nav-glow-line { height: 1px; box-shadow: 0 1px 16px var(--scene-accent); }
+.cinema-shell:not([data-theme="classic"]) .room-header-top {
+  border: 1px solid rgba(255,255,255,.13);
+  border-bottom: 1px solid color-mix(in srgb, var(--scene-accent) 40%, #222831);
+  border-radius: 14px;
+  padding: .7rem 1rem;
+  background: linear-gradient(135deg, rgba(25,26,32,.91), rgba(10,11,17,.89));
+  box-shadow: 0 12px 42px rgba(0,0,0,.56), inset 0 1px rgba(255,255,255,.1);
+  backdrop-filter: blur(18px);
+}
+.cinema-shell:not([data-theme="classic"]) .marquee-title {
+  color: #fff3df;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 2.75vw, 2.3rem);
+  letter-spacing: .02em;
+  text-shadow: 0 2px 18px rgba(0,0,0,.85);
+}
+.cinema-shell:not([data-theme="classic"]) .screen-stack,
+.cinema-shell:not([data-theme="classic"]) .chat-panel {
+  background: linear-gradient(145deg, rgba(21,24,30,.96), rgba(8,9,14,.96));
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 15px;
+  box-shadow: 0 22px 80px rgba(0,0,0,.72), 0 2px 10px rgba(0,0,0,.5), inset 0 1px rgba(255,255,255,.12);
+  backdrop-filter: blur(16px);
+}
+.cinema-shell:not([data-theme="classic"]) .screen-stack {
+  padding: clamp(.8rem, 1.6vw, 1.4rem);
+}
+.cinema-shell:not([data-theme="classic"]) .watch-frame {
+  border: 7px solid #06080b;
+  outline: 1px solid rgba(255,255,255,.18);
+  border-radius: 7px;
+  box-shadow: 0 2px 0 #626b75a6, 0 20px 40px #0009, 0 0 70px color-mix(in srgb, var(--scene-accent) 10%, transparent);
+}
+.cinema-shell:not([data-theme="classic"]) .screen-stack .video-panel {
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+.cinema-shell:not([data-theme="classic"]) .page {
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  background: rgba(11,12,16,.84);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 65px #000c;
+}
+.cinema-shell:not([data-theme="classic"]) .hero-screen {
+  border-radius: 10px;
+  border: 8px solid #090b0e;
+  outline: 2px solid color-mix(in srgb, var(--scene-accent) 52%, #808890);
+  background: linear-gradient(135deg, rgba(5,7,11,.78), rgba(19,16,20,.63)) !important;
+  box-shadow: 0 0 0 13px #050609ae, 0 0 0 15px #b3a08588, 0 28px 85px #000d;
+}
+.cinema-shell:not([data-theme="classic"]) .hero-logo {
+  font-family: Georgia, serif;
+  font-weight: 700;
+  color: #fff7eb;
+  filter: none;
+  text-shadow: 0 6px 30px #000, 0 2px 6px #000;
+}
+.cinema-shell:not([data-theme="classic"]) .join-screen {
+  background: rgba(9,11,15,.91);
+  border: 1px solid rgba(255,255,255,.23);
+  border-radius: 18px;
+  box-shadow: 0 24px 75px #000b;
+  backdrop-filter: blur(20px);
+}
+
+/* Accessible room-local house-light control. This never touches playback or
+   sync; different viewers can use different settings independently. */
+.house-lights {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  margin: 0;
+  color: #fff4e2;
+  font: 600 .63rem/1.1 system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  white-space: nowrap;
+}
+.house-lights select {
+  min-height: 36px;
+  min-width: 102px;
+  color: #fbeedc;
+  color-scheme: dark;
+  font: 500 .78rem/1.2 system-ui, sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  border: 1px solid rgba(238,202,156,.35);
+  border-radius: 8px;
+  padding: .35rem .55rem;
+  background: rgba(8,10,15,.88);
+  cursor: pointer;
+}
+.house-lights select:focus-visible {
+  outline: 2px solid #ffe5ac;
+  outline-offset: 2px;
+}
+.cinema-shell .room-header-actions { align-items: center; }
+.cinema-shell[data-lighting="movie"] .cinematic-scenery--room {
+  filter: brightness(.66) saturate(.85);
+}
+.cinema-shell[data-lighting="preshow"] .cinematic-scenery--room {
+  filter: brightness(.93) saturate(.95);
+}
+.cinema-shell[data-lighting="intermission"] .cinematic-scenery--room {
+  filter: brightness(1.22) saturate(1.1);
+}
+.cinema-shell[data-theme="classic"][data-lighting="movie"] .cinema-backdrop { filter: brightness(.7); }
+.cinema-shell[data-theme="classic"][data-lighting="preshow"] .cinema-backdrop { filter: brightness(.95); }
+.cinema-shell[data-theme="classic"][data-lighting="intermission"] .cinema-backdrop { filter: brightness(1.22); }
+.cinema-shell .cinematic-sconce { animation: cinematic-warmth 5s ease-in-out infinite alternate; }
+@keyframes cinematic-warmth { from { opacity: .89; } to { opacity: 1; } }
+@media (max-width: 850px) {
+  .cinema-shell .cinematic-scenery--room { opacity: .9; }
+  .cinema-shell:not([data-theme="classic"]) .room-header-top { gap: .75rem; }
+  .house-lights select { min-height: 44px; }
+}
+@media (max-width: 520px) {
+  .house-lights { font-size: .58rem; }
+  .house-lights select { min-width: 85px; }
+  .cinema-shell:not([data-theme="classic"]) .poster-card { height: 240px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cinema-shell .cinematic-scenery { transition: none; }
+  .cinema-shell .cinematic-sconce { animation: none; }
+}
