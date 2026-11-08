@@ -34,7 +34,7 @@ function Seat({ x, y, scale=1, uid }) {
   );
 }
 
-function VenueProps({ theme, uid, p }) {
+function VenueProps({ theme, uid }) {
   switch (theme) {
     case "horror":
       return <g>
@@ -149,7 +149,7 @@ export default function CinematicScenery({ theme="classic", mode="room" }) {
       <path d="M382 600 0 900M1058 600 1440 900" stroke={p.trim} strokeOpacity=".18" strokeWidth="8"/>
       <path d="M660 620 510 900H930L780 620Z" fill="#10131b" opacity=".68"/>
       <path d="M675 633 560 900M765 633 880 900" stroke={p.light} strokeOpacity=".28" strokeWidth="4"/>
-      <GenreDetailWrapper theme={theme} uid={uid} p={p}/>
+      <VenueProps theme={theme} uid={uid}/>
       {[175,1265].map((x,i)=><g key={i} className="cinematic-sconce">
         <ellipse cx={x} cy="420" rx="160" ry="220" fill={"url(#glow-"+uid+")"}/>
         <rect x={x-17} y="371" width="34" height="104" rx="8" fill={p.trim} opacity=".58" stroke="#07090c" strokeWidth="8"/>
@@ -170,4 +170,3 @@ export default function CinematicScenery({ theme="classic", mode="room" }) {
   );
 }
 
-function GenreDetailWrapper(props) { return <VenueProps {...props}/>; }
