@@ -45,6 +45,8 @@ export default function CinemaEntrance({ onCreate, joinCode, onJoinCodeChange, o
     <div className="ce-root" ref={rootRef} style={{ top }}>
       <div className="ce-stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, marginTop: -40 * scale }}>
         <div className="ce-art" ref={artRef} aria-hidden="true" dangerouslySetInnerHTML={{ __html: entranceArt }} />
+        <img className="cc-photo-lobby" src="/cinema-assets/lobby-background.webp" alt="" aria-hidden="true"
+          onLoad={(e) => e.currentTarget.parentElement.classList.add("cc-photo-loaded")} />
 
         <button type="button" className="ce-ticket" onClick={onCreate}>
           <span className="ce-ticket-main">
