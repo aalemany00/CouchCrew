@@ -84,7 +84,7 @@ export default function ChatPanel({ roomId, onFlourish, onToast }) {
     <>
       <button
         type="button"
-        className="chat-float-toggle"
+        className={`chat-float-toggle${open ? " is-open" : ""}`}
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close chat" : "Open chat"}
       >
