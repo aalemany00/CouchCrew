@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
 import { checkRoomExists } from "../lib/roomApi";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
+import CinemaEntrance from "./CinemaEntrance";
 
 // Theme picking lives only on the Themes tab; the room code (optional) is
 // asked for on the Create screen along with your name, not here - see
 // CreateRoomScreen.jsx. This page is just "create" or "join."
-export default function HomePage() {
+export default function HomePage({ theme = "classic" }) {
   const [joinOpen, setJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [checking, setChecking] = useState(false);
+  // The Default theme's theater-entrance scene is drawn for desktop widths; on
+  // phones/narrow windows keep the original responsive hero below.
+  const [wide, setWide] = useState(() => window.matchMedia("(min-width: 820px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 820px)");
+    const onChange = (e) => setWide(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   async function handleJoinSubmit(e) {
     e.preventDefault();
@@ -30,6 +40,19 @@ export default function HomePage() {
       return;
     }
     navigate(`/r/${trimmed}`);
+  }
+
+  if (theme === "classic" && wide) {
+    return (
+      <CinemaEntrance
+        onCreate={() => navigate("/create")}
+        joinCode={joinCode}
+        onJoinCodeChange={setJoinCode}
+        onJoinSubmit={handleJoinSubmit}
+        joinError={joinError}
+        checking={checking}
+      />
+    );
   }
 
   return (

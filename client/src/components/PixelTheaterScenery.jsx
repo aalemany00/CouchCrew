@@ -1,4 +1,5 @@
 import { useId } from "react";
+import CinemaBackdrop from "./CinemaBackdrop";
 
 /**
  * Scalable, crisp-edged pixel theater background.
@@ -30,8 +31,12 @@ function IconProp({theme,x,y,scale=1}) {
   return <g {...common}><path d="M2 14h50l-7 48H9z" fill="#f4e6d5" stroke="#a41e38" strokeWidth="4"/>{[10,25,40].map(x=><path key={x} d={`M${x} 18v39`} stroke="#d22d44" strokeWidth="7"/>)}{Array.from({length:8},(_,i)=><rect key={i} x={3+(i*13)%46} y={1+(i*7)%14} width="10" height="10" fill="#ffe6a2" stroke="#f6b95f" strokeWidth="2"/>)}</g>;
 }
 export default function PixelTheaterScenery({theme="classic",mode="lobby"}) {
+  // The Default (classic) theme uses the realistic cinema backdrop; every other
+  // genre theme keeps its pixel scene below.
+  const isCinema=theme==="classic";
   const p=PALETTES[theme]||PALETTES.classic;
   const uid=useId().replace(/:/g,"");
+  if(isCinema)return <CinemaBackdrop/>;
   return <svg className={`pixel-theater pixel-theater--${mode}`} viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" role="presentation" aria-hidden="true" style={{"--pixel-glow":p.glow}}>
     <defs>
       <linearGradient id={`wall-${uid}`} x2="0" y2="1"><stop stopColor={p.wall}/><stop offset="1" stopColor={p.deep}/></linearGradient>
