@@ -5,6 +5,482 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-06 — Admin: list/delete accounts (Settings)
+
+**Who:** Adrian, with Claude Code, on `feature/admin-account-management`.
+
+**What happened:** after the Turso migration, Adrian asked to get his
+developer badge back and to remove the other (test) accounts that had
+piled up. Checked first: his production account still existed with its
+security question intact (the Render-file bug hadn't actually wiped it
+yet at that point), and the developer badge is computed live from the
+signed-in account's email on every room:join - there's no extra per-
+account state to "re-apply," so nothing was actually lost there. But there
+was no way to remove *other* accounts at all: `DELETE /api/auth/account`
+intentionally requires the target account's own password (you can only
+delete yourself), so cleaning up test/teammate accounts had no path that
+didn't involve touching the database directly.
+
+**What we built:** a small admin capability gated to the one hardcoded
+developer account (`server/developer.js`, now shared between the room
+badge check and this, so they can't drift apart):
+- `GET /api/admin/users` / `DELETE /api/admin/users/:id`, both behind a
+  `requireDeveloper` check - a non-developer account gets a 403, verified
+  directly (not assumed).
+- A collapsible "Admin: accounts" section in Settings, visible only when
+  `user.isDeveloper` is true (computed server-side, never trusted from the
+  client) - lists every account, lets you delete one at a time, or
+  everything except your own with a single confirm.
+- The admin delete route refuses to delete the caller's own account (use
+  the regular password-confirmed delete-account flow for that) - it's a
+  one-line mistake-guard, not a security boundary, since the account would
+  obviously have the authority to delete itself anyway.
+
+**Verified for real:** created a developer account plus two "other" test
+accounts locally, confirmed the admin panel correctly lists all three with
+"(you)" on the right one, deleted one individually (button, no `window.
+confirm`), confirmed server-side the deleted account can no longer log in,
+and confirmed access control both ways - the developer's own token can
+list accounts, a non-developer's token gets a 403. (The bulk "delete all
+others" button uses `window.confirm`, which the browser-automation
+environment used for testing silently dismisses - not re-verified through
+that exact path, but it calls the same per-account delete already proven
+to work.)
+
+**Open items:**
+- Once Turso is wired up in production (previous entry), this is the tool
+  to use for cleaning up whatever test accounts exist there - sign in as
+  the developer account on the live site and use the panel directly,
+  rather than this session touching production data.
+
+---
+
+## 2026-11-06 — Accounts were being silently wiped on every deploy (fixed)
+
+**Who:** Adrian, with Claude Code, on `feature/persistent-accounts-turso`.
+
+**What happened:** Adrian signed up for an account, then later found
+"Forgot Password" reported "No account with that email" for the exact
+email he signed up with. Traced it to `server/db.js`: accounts were stored
+in a SQLite file on the server's own disk (`node:sqlite`), and that file's
+own comment already said this resets on Render's free tier - but that was
+logged as an "accepted tradeoff" rather than something that would actually
+bite. It bites constantly: Render redeploys on every merge, and each
+redeploy wipes the file, deleting every account that existed since the
+last deploy. With how often this team merges PRs, real accounts were never
+going to survive more than a day or two.
+
+**Checked before proposing a fix (not assumed):** confirmed against
+Render's own docs that free web services have an ephemeral filesystem
+wiped on every redeploy/restart/spin-down, and that Render's own free
+alternatives aren't durable either - free Postgres expires 30 days after
+creation, and free Key-Value doesn't persist restarts. So this needed an
+external service, not a Render setting. Turso (hosted SQLite/libSQL)
+confirmed free with no card: 5GB storage, ~500M reads/10M writes a month,
+comfortably past anything this project needs.
+
+**What we built:** `server/db.js` now uses `@libsql/client` instead of
+`node:sqlite` - same SQL, but every call is async (libSQL's client is
+Promise-based). `server/auth.js` and the one other caller
+(`server/index.js`'s developer-badge check) now `await` those calls.
+With `TURSO_DATABASE_URL` unset, it falls back to a local file (libSQL's
+own embedded mode) - so running the server locally still needs no account
+or setup at all, same pattern as the Cloudflare TURN relay (real
+credentials only required in production).
+
+**Verified for real:** started the server locally against the existing
+`node:sqlite`-created file - libSQL opened it with no migration needed and
+found Adrian's real account already in it (confirmed via a direct
+`/api/auth/security-question` call). Then ran the actual failure mode:
+signed up a fresh test account, fully restarted the server process
+(simulating a redeploy), and logged back in - succeeded. Also signed up
+through the real UI (not just curl), confirmed the full account flow
+(profile fields, sign out, delete account) still works end to end, then
+deleted the test account.
+
+**Open items:**
+- Adrian needs to create a free Turso database and add
+  `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` to Render's environment
+  variables for this to actually take effect in production - without
+  them, production keeps using Render's own ephemeral file and the bug
+  isn't actually fixed yet, just made fixable.
+- Whichever real account Adrian had before this (the one "Forgot
+  Password" couldn't find) is gone for good - wiped by whatever redeploy
+  happened after he signed up. He'll need to sign up again once Turso is
+  wired in.
+
+---
+
+## 2026-11-06 — Replaced the dev badge chip with a permanent glowing name/avatar
+
+**Who:** Adrian, with Claude Code, on `feature/dev-identity-glow`. Follow-up
+to the "developer badge" entry below, per Adrian's own feedback: he didn't
+want a separate tag that needed a click/room-settings visit to notice -
+just wanted his own identity to look different everywhere his name shows,
+automatically.
+
+**What changed:** removed the "🛠️ Dev" chip from the People list, Leader
+list, chat, and profile card. In its place, `.dev-name`/`.dev-avatar` in
+`App.css` give the verified account's name text a permanent cyan/magenta
+neon glow (`text-shadow`, fixed hex colors rather than the room's theme
+variables, so it looks the same in every one of the 8 themes) and its
+avatar circle a matching glowing ring - applied via a plain CSS class
+added wherever `isDeveloper` is true, no extra markup or click needed to
+reveal it. The server-side verification from the previous entry (checking
+the real signed-in account's email, not anything the client claims) is
+completely unchanged - this was a display-only follow-up.
+
+One implementation note worth keeping: `.dev-name`/`.dev-avatar` had to be
+moved to the very end of `App.css`, since `.member-name-button` and
+`.chat-sender-name` both set `color: inherit` and are declared later in
+the file than where these rules first lived - same CSS specificity means
+whichever rule comes last in the file wins, so the glow was silently
+getting overridden back to the default color until they were moved.
+
+**Verified:** sent a chat message and opened the room settings drawer as
+the verified account - "Adrian" renders in a visible cyan glow against
+plain white chat text in both places, with a matching glow ring on the
+avatar, with no click or hover required to see it.
+
+---
+
+## 2026-11-06 — A verified "developer" badge
+
+**Who:** Adrian, with Claude Code, on `feature/developer-badge`.
+
+**What we built:** a 🛠️ "Dev" badge next to Adrian's name wherever a name
+shows up in a room - the People list, the member profile card ("🛠️ Built
+this app"), and chat messages. Deliberately **not** something the client
+can claim for itself: `room:join` now optionally carries the signed-in
+session's `authToken`, and `server/index.js` looks that token up via
+`getUserByToken` (from `server/db.js`) and checks the account's *actual*
+email server-side against one hardcoded address
+(`adrian.alemany2@gmail.com`) before ever setting `isDeveloper` on that
+member's record - typing a name, or any client-side trick, can't produce
+the badge. Chat messages snapshot `isDeveloper` the same way they already
+do for avatar/bio.
+
+**Verified:** signed in locally as that account, created a room, and
+confirmed the badge shows in the People list and the profile card
+("🛠️ Built this app"); joined the same room from a second tab signed out
+(just "Henry", no account) and confirmed no badge appears for them -
+having a name or being in the room isn't enough, only the verified
+account is.
+
+---
+
+## 2026-11-06 — Delete account
+
+**Who:** Adrian, with Claude Code, on `feature/delete-account`.
+
+**What we built:** `DELETE /api/auth/account` (`server/auth.js` +
+`deleteUser` in `server/db.js`) - requires the current password, same as
+changing it, rather than being a single click; removes the user row and
+every session for that account. Settings' Account section has a "Delete
+account" action that opens a clear warning plus a password-confirmation
+form before anything happens. Deleting signs you out but deliberately
+doesn't touch `couchcrew:name`/`avatar`/`bio` in `localStorage` - your
+name/photo/bio keep working as a local, no-longer-account-backed profile
+afterward, same as before ever signing up.
+
+**Verified:** wrong password on the confirmation form is rejected with
+"Password is wrong." and nothing is deleted; the correct password deletes
+the account, signs the UI back out to the Sign In/Sign Up/Forgot Password
+view, and confirmed via `/api/auth/login` that the deleted account can no
+longer sign in at all.
+
+---
+
+## 2026-11-06 — Real user accounts: sign up/in, change/reset password, account-backed profile
+
+**Who:** Adrian, with Claude Code, on `feature/user-accounts`. Discussed
+scope with Adrian first (two real decisions, not ones to make silently):
+no email service is set up for this project, so "forgot password" uses a
+security question instead of an emailed reset link; account data lives in
+a single SQLite file on the server (`node:sqlite`, built into Node - no
+new dependency, no native module to build/deploy), which resets on a
+redeploy to an ephemeral host like Render's free tier - an accepted
+tradeoff for a course project, not something production-grade.
+
+**What we built:**
+- `server/db.js`: users + sessions tables. Passwords and security-question
+  answers are hashed with `scryptSync` (built into `node:crypto`, no
+  bcrypt dependency) with a per-secret random salt, compared with
+  `timingSafeEqual`. Never stored or returned in plain text.
+- `server/auth.js`: `POST /api/auth/signup`, `/login`, `/logout`,
+  `GET /me`, `POST /security-question` + `/reset-password` (the two-step
+  forgot-password flow), `POST /change-password` (requires the current
+  password), `PUT /profile` (name/avatar/bio only - this route physically
+  cannot touch email or password).
+- `client/lib/auth.js` + new `AccountSection.jsx` (shown in Settings,
+  above the profile form): sign in / sign up / forgot password when
+  signed out; email (never shown to anyone else) + change-password when
+  signed in.
+- **"Profile translates over to rooms, except email/password"**: signing
+  in copies the account's name/avatar/bio into the exact same
+  `localStorage` keys (`couchcrew:name`/`avatar`/`bio`) that
+  `ProfileForm`/`RoomView`/`ChatPanel` already read and sync to rooms -
+  none of that existing code needed to change or even know accounts
+  exist. Saving the profile form while signed in also pushes the update
+  back to the account (`PUT /api/auth/profile`), so it's there next time
+  you sign in anywhere. Email and password are only ever handled by
+  `auth.js`'s own routes - they're never part of `room:join`/
+  `profile:update`'s payload, so there's no path for either to reach a
+  room or another viewer.
+
+**Verified end to end:** signed up a new account, confirmed the profile
+form was pre-filled with the account's name immediately after; signed
+out, used "Forgot Password" with the security question, got the
+right question back, answered it (case-insensitively - typed "jaws" for
+an answer saved as "Jaws") and reset the password, which signed back in
+automatically; changed the bio while signed in and confirmed via
+`/api/auth/me` that it persisted server-side; created a room and opened
+the member profile card - the account's bio showed up there correctly.
+
+**Known limitations, accepted for scope:** no email verification or
+real password-reset email (the security-question tradeoff above); no
+rate-limiting on login/signup attempts; the security-question reset
+necessarily confirms whether an email has an account (a real emailed
+link wouldn't do that) - normal for this kind of lightweight reset flow,
+just worth knowing; editing profile from the in-room settings drawer
+updates the room and `localStorage` but doesn't push back to the account
+record (only the standalone Settings page's save does) - a real gap if
+someone edits their bio mid-room and expects it saved to their account.
+
+---
+
+## 2026-11-06 — Archive.org search: cut the clutter, surface popular results
+
+**Who:** Adrian, with Claude Code, on `feature/archive-search-quality`.
+
+**Why:** searching "jaws" returned a Twitter bot clip, a fire-department
+rescue video, random YouTube reaction videos, and a Funny or Die sketch
+before anything resembling the actual movie - archive.org's generic
+"movies" mediatype includes literally anything anyone's ever uploaded
+labeled as video. Adrian wants strictly real movies/TV, not news, and only
+well-known results, not obscure clutter.
+
+**What changed** (`server/archive.js`): the search query now scopes to
+the real movie/TV collections (`feature_films`, `classic_tv`,
+`television`) instead of the open "movies" mediatype alone, explicitly
+excludes the News & Public Affairs collection, requires at least 500
+downloads (a real popularity floor, not just "exists"), and sorts by
+download count descending so the most-watched match leads.
+
+**Verified:** searching "jaws" now returns exactly 4 results, led by the
+real 1975 film (33k downloads) - no news, no random clips. "nosferatu"
+returns 7 legitimate prints of the actual film, led by a 433k-download
+copy. "inception" (not public domain, correctly) returns nothing rather
+than a pile of irrelevant noise. Confirmed live in the app: typing "jaws"
+in the room's Archive.org search shows only the 4 real results.
+
+---
+
+## 2026-11-06 — Watch Together cleanup: dropdown, shorter codes, fixed theme bug, full-time Screen Share
+
+**Who:** Adrian, with Claude Code, on `feature/watch-ui-and-screenshare`
+(branched off `feature/home-join-create-flow`). Touches `VideoPanel.jsx`
+(Job 2, Henry) and `WatchPlayer.jsx` (Job 3, John) - flagged for both to
+review.
+
+**What we fixed/built, from Adrian's own testing feedback:**
+- **Bug fixed:** selecting a theme on the Themes page was force-navigating
+  straight to the Create screen. `ThemesPage.jsx` now just toggles the
+  selection (and previews it on that page's own background) - creating a
+  room is a separate, explicit "Create a Room" button on the same page.
+- **Shorter film-inspired room codes** (`lib/roomCode.js`): swapped the
+  title list for short, mostly single-word titles ("jaws", "her", "heat")
+  instead of long multi-word ones like "mad-max-fury-road".
+- **Archive.org's "Browse" link is now a small popup** (same pattern as
+  the YouTube/Twitch/Kick finders), not a full tab-swap away from the
+  room - and split into separate **Browse Movies** / **Browse Shows**
+  links (`feature_films` / `television` collections) instead of one link
+  to archive.org's generic, everything-mixed-together movies collection
+  page.
+- **Fixed the real bug behind "typing a title doesn't find it":**
+  `parseArchiveIdentifier` was guessing that any single plain word (e.g.
+  "jaws") was probably a literal archive.org identifier and trying to
+  load it directly instead of searching - identifiers are rarely a bare
+  dictionary word. Now only an actual archive.org `/details/<id>` link
+  counts as a direct load; everything else searches. Combined with a new
+  **live search-as-you-type** (debounced ~500ms), you can just type a
+  title and see results without pressing Search at all.
+- **Viewing options are a dropdown now** (`.watch-provider-dropdown`),
+  not a row of buttons sitting out all the time - YouTube, Archive.org,
+  Twitch (live), Kick (live), and now **Screen Share**.
+- **Screen Share promoted to a full-time option, not buried in an
+  already-joined call:** picking it from the dropdown calls a new
+  `shareScreen()` method `VideoPanel.jsx` exposes via `forwardRef` +
+  `useImperativeHandle` (wired through `RoomView.jsx`), which joins the
+  call silently - no mic/camera prompts, matching "usable even if no one
+  is watching" - if nobody's joined yet, then triggers the existing
+  screen-capture flow. `joinCall` now takes optional mic/cam overrides
+  instead of always reading the checkbox state for this. The actual video
+  still renders in the Video & Screen Share panel below (that's where the
+  peer tiles already live); WatchPlayer's side just shows "Sharing your
+  screen — see Video & Screen Share below."
+
+**Verified:** reselecting a theme on the Themes page no longer navigates
+anywhere; a freshly created room got the code "her" (not a multi-word
+string); the dropdown lists all five options and switching between
+YouTube/Archive.org/Screen Share works with no cross-talk; typing "jaws"
+into the Archive.org box with no Search click produced live results;
+selecting Screen Share auto-joined the call with mic and camera both off
+(confirmed via the call's own "Unmute"/"Camera on" button states) without
+ever showing the "Join the call" form. The actual screen-capture picker
+itself couldn't be exercised end-to-end (this session's sandboxed browser
+has no real screen to share), so Henry should double check that part for
+real.
+
+---
+
+## 2026-11-06 — Reworked Home's create/join flow; film-inspired room codes
+
+**Who:** Adrian, with Claude Code, on `feature/home-join-create-flow`
+(branched off `feature/archive-org-watch-together`).
+
+**What changed, from Adrian's own feedback on the current Home page:**
+- **Join** no longer shows a room-code textbox up front. "Join with a
+  code" is the only control until clicked; clicking it reveals the
+  textbox + a "Join" submit button in its place. Submitting blank shows
+  "Type a room code to join."; submitting a code for a room that isn't
+  currently active (checked via the existing `/api/room-exists`) shows
+  "No room found with that code — double-check it, or ask for a fresh
+  invite link." instead of silently dropping you into a brand-new, empty
+  room under a mistyped code with no indication anything was wrong.
+- **Create** no longer has an inline custom-code field on Home either.
+  "Create a Room" now goes to a new `/create` screen (new
+  `CreateRoomScreen.jsx`) that asks for your name *and* an optional room
+  code together, before the room exists - rather than deciding the code
+  first and asking for a name after landing in it. Leaving the code blank
+  auto-generates one; typing one still gets the existing auto-suffix
+  treatment if it's taken (`"inception"` -> `"inception-2"`).
+- **Auto-generated codes are film titles now** (`lib/roomCode.js`'s
+  `generateRoomCode`), not random letters/numbers - "inception",
+  "the-matrix", "spirited-away", etc. Easier to say out loud and remember
+  than "xk4m9q"; collisions between two rooms wanting the same title are
+  handled by the existing auto-suffix, same as a typed code.
+- The Themes gallery's "Select Theme" now routes through this same
+  `/create` screen (carrying the chosen theme along) instead of skipping
+  straight to a room with only a name prompt, so there's one consistent
+  "create a room" entry point app-wide.
+
+**Verified:** Home shows no textbox until "Join with a code" is clicked,
+which reveals it in place; submitting empty and submitting a made-up code
+each showed the right message; "Create a Room" opens `/create` with name +
+optional-code fields, blank code produced a real film-title room
+(`edge-of-tomorrow`), and a typed code plus a Themes-selected genre
+(Horror) both carried through correctly into the room. No console errors
+in any of the above.
+
+---
+
+## 2026-11-06 — Archive.org: real synced playback of legal, public-domain films
+
+**Who:** Adrian, with Claude Code, on `feature/archive-org-watch-together`
+(branched off `feature/profile-bio-and-home-cleanup`, since nothing here is
+merged to `main` yet).
+
+**Why:** Adrian wants real in-app convenience beyond screen-share for
+"watch something together," and the only way to do that *legally* is
+content we actually have the right to show. Netflix/Hulu/Disney+/Prime are
+out regardless of technique (DMCA, not just a technical wall - even a
+Teleparty-style browser extension only works because the viewer stays in
+their own authenticated tab; nothing is ever embedded). The Internet
+Archive hosts thousands of public-domain films with a free, keyless,
+documented API and direct CORS-enabled mp4 files - legal to embed and sync
+because copyright has expired, not because of a loophole.
+
+**What we built:**
+- `server/archive.js` (new): proxies archive.org's search and metadata
+  endpoints (`GET /api/archive/search`, `GET /api/archive/item/:id`) rather
+  than calling them from the browser - avoids depending on archive.org's
+  CORS behavior and keeps every viewer's browser from hitting it directly.
+  No API key needed (archive.org's search/metadata API is free and public).
+- `WatchPlayer.jsx`: Archive.org is a second **on-demand** provider
+  alongside YouTube (distinct from Twitch/Kick, which stay "live, no
+  sync"). The YouTube IFrame Player and a plain `<video>` element are both
+  accessed through one small adapter interface (`getPlayerFor`/
+  `isPlayerReady`, wrapping a `<video>` as `makeVideoElementPlayer`), so
+  the actual drift-correction/conflict-resolution engine - the delicate
+  part John's file header calls out - runs completely unmodified for
+  either provider; "youtube" vs "archive" only matters at the handful of
+  spots that decide which player object to talk to. Search/load reuses the
+  exact same UI and `sync:event` "load" shape YouTube already uses, just
+  tagged `provider: "archive"` with a resolved mp4 URL in place of a video
+  ID.
+- Fixed one real cross-talk risk while wiring this up: the hidden YouTube
+  player's own `onStateChange` callback didn't check which provider was
+  active, so pausing it programmatically on a provider switch could have
+  fired a stray "pause" event while Archive.org was actually live. Added
+  the missing guard.
+
+**Verified (two-tab, real archive.org item):** searched "night of the
+living dead" with no API key needed, got real search results with
+thumbnails; loaded a public-domain print (archive.org identifier
+`night-of-the-living-dead-1968-horror-mystery-480-x-640.mp-4-converted`)
+and confirmed `Content-Type: video/mp4`, open CORS, and byte-range support
+via a direct HEAD request first. In the room: leader's play started the
+follower's video at the same position; pausing on the leader's side paused
+the follower's at the identical timestamp (0:10); seeking on the leader's
+scrubber to 33:28 landed the follower on the same frame; switching the
+leader back to YouTube mid-session switched the follower too, with no
+cross-talk or console errors from the now-hidden, paused archive player.
+
+**Not covered:** real network latency/drift over an actual cross-network
+connection (only tested on localhost), and most archive.org items aren't
+famous films - search quality depends entirely on what's been uploaded
+there and how it's titled.
+
+---
+
+## 2026-11-05 — Theme/About cleanup, user bios, drop the Rooms tab
+
+**Who:** Adrian, with Claude Code, on `feature/profile-bio-and-home-cleanup`
+(branched off `fix/room-reload-false-leave`, not `main` — the files this
+touches, like `ProfileForm.jsx` and `RoomSettingsDrawer.jsx`, only exist on
+that still-unmerged branch).
+
+**What we built:**
+- **Theme picking is Themes-only now.** Removed the "Choose a theme"
+  gallery from `HomePage.jsx` — a new room from Home always starts Classic;
+  pick a theme on its own tab, or change it later from a room's own
+  settings drawer. Dropped the now-unused `pendingTheme`/`onSelectTheme`
+  wiring between `App.jsx` and `HomePage.jsx`.
+- **"About CouchCrew" moved from Settings to Help** (`HelpPage.jsx`) —
+  Settings is now just your profile, not app info.
+- **Bios.** `ProfileForm.jsx` has a 160-char bio field alongside name/photo,
+  saved to `localStorage` (`couchcrew:bio`, new `lib/profile.js`) and sent
+  to the server on `room:join`/`profile:update` (`server/index.js` now
+  carries `bio` on each member record, same length-capped pattern as
+  `avatar`).
+- **Tap a name or photo to see someone's profile.** New shared
+  `MemberProfileCard.jsx` (avatar, name, bio) opens from two places: a
+  member's name in the settings drawer's People list (live data from
+  `members`), and an avatar/name in chat. Chat messages now carry a
+  snapshot of the sender's `avatar`/`bio` taken at send time (like most
+  chat apps) rather than a live lookup, so it still works for someone who's
+  since left the room and doesn't retroactively change if they edit their
+  profile later.
+- **Dropped the Rooms tab.** Its join-by-code form moved onto Home itself
+  (you can create *or* join right from the hero), `RoomsPage.jsx` deleted,
+  nav link removed, `/rooms` route removed from `router.js` (an old link to
+  it now just lands on Home instead of erroring).
+- **Recent rooms moved into Settings**, near the top, collapsed by default
+  (`<details>`-style toggle) so it doesn't take up space when you don't
+  need it — same `lib/recentRooms.js` as before, just relocated from the
+  deleted Rooms page.
+
+**Verified:** built (`npm run build`) and ran it live — Home has no theme
+gallery and its join form works, Help shows the About text, Settings shows
+a collapsed "Recent rooms" that expands on click with no rooms yet, saved
+a name+bio and confirmed it's pre-filled next time, joined a room and
+confirmed the People list and a chat message's avatar both open the same
+profile card with the saved bio, and Themes still creates a themed room
+normally. No console errors.
+
+---
+
 ## 2026-11-05 — Call controls: live device switching, volume meters, per-person mute (Job 2)
 
 **Who:** Henry, with Claude Code, on `feature/call-controls`.
@@ -33,6 +509,9 @@ other tab's meter for me drop to zero while video kept flowing.
 
 **Not yet verified:** real devices (actual mic/speaker lists and the speaker
 picker need a real browser), and the tile controls on a phone-width screen.
+
+---
+
 
 ---
 

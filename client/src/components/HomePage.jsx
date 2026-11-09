@@ -1,14 +1,62 @@
-import { useState } from "react";
-import { THEMES } from "../lib/theater";
+import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
+import { checkRoomExists } from "../lib/roomApi";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
-import PixelTheaterScenery from "./PixelTheaterScenery";
+import CinemaEntrance, { CinemaEntranceCompact } from "./CinemaEntrance";
 
-export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creating }) {
-  const [customCode, setCustomCode] = useState("");
+// Theme picking lives only on the Themes tab; the room code (optional) is
+// asked for on the Create screen along with your name, not here - see
+// CreateRoomScreen.jsx. This page is just "create" or "join."
+export default function HomePage({ theme = "classic" }) {
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [checking, setChecking] = useState(false);
+  // Every theme gets the cinema entrance: the full scene from 820px wide, a
+  // compact stacked version below that. The original drive-in hero further down
+  // is only a last-resort fallback for tiny (< 340px) windows.
+  const query = (min) => window.matchMedia(`(min-width: ${min}px)`);
+  const sizeOf = () => (query(820).matches ? "wide" : query(340).matches ? "compact" : "legacy");
+  const [size, setSize] = useState(sizeOf);
+  useEffect(() => {
+    const onChange = () => setSize(sizeOf());
+    const mqs = [query(820), query(340)];
+    mqs.forEach((mq) => mq.addEventListener("change", onChange));
+    return () => mqs.forEach((mq) => mq.removeEventListener("change", onChange));
+  }, []);
 
-  function createRoom() {
-    onCreate(customCode, pendingTheme);
+  async function handleJoinSubmit(e) {
+    e.preventDefault();
+    const trimmed = joinCode.trim().toLowerCase();
+    if (!trimmed) {
+      setJoinError("Type a room code to join.");
+      return;
+    }
+    setJoinError("");
+    setChecking(true);
+    const exists = await checkRoomExists(trimmed);
+    setChecking(false);
+    // `null` means the existence check itself failed (server unreachable) -
+    // don't block joining over that, just let the attempt through.
+    if (exists === false) {
+      setJoinError("No room found with that code — double-check it, or ask for a fresh invite link.");
+      return;
+    }
+    navigate(`/r/${trimmed}`);
+  }
+
+  if (size !== "legacy") {
+    const Entrance = size === "wide" ? CinemaEntrance : CinemaEntranceCompact;
+    return (
+      <Entrance
+        onCreate={() => navigate("/create")}
+        joinCode={joinCode}
+        onJoinCodeChange={setJoinCode}
+        onJoinSubmit={handleJoinSubmit}
+        joinError={joinError}
+        checking={checking}
+      />
+    );
   }
 
   return (
@@ -20,58 +68,43 @@ export default function HomePage({ pendingTheme, onSelectTheme, onCreate, creati
         <div className="hero-main">
           <div className="hero-screen-wrap">
             <div className="hero-screen">
-              {!pendingTheme || pendingTheme === "classic" ? <ScreenBackdrop /> : <div className="genre-screen-backdrop" aria-hidden="true" />}
+              <ScreenBackdrop />
               <div className="hero-screen-content">
                 <h1 className="hero-logo">CouchCrew</h1>
                 <span className="hero-logo-underline" aria-hidden="true" />
                 <p className="hero-tagline">WATCH TOGETHER. ANYWHERE.</p>
-                <button type="button" className="ticket-button" onClick={createRoom} disabled={creating}>
-                  {creating ? "Creating…" : "★ Create a Room ★"}
+                <button type="button" className="ticket-button" onClick={() => navigate("/create")}>
+                  ★ Create a Room ★
                 </button>
-                <input
-                  type="text"
-                  className="custom-code-input"
-                  placeholder="Custom room code (optional)"
-                  value={customCode}
-                  onChange={(e) => setCustomCode(e.target.value)}
-                  disabled={creating}
-                />
                 <div className="join-divider">or</div>
-                <button type="button" className="secondary" onClick={() => navigate("/rooms")}>
-                  Join with a code
-                </button>
+                {!joinOpen ? (
+                  <button type="button" className="secondary" onClick={() => setJoinOpen(true)}>
+                    Join with a code
+                  </button>
+                ) : (
+                  <form className="join-code-form" onSubmit={handleJoinSubmit}>
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Room code (from a link a friend sent you)"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value)}
+                      disabled={checking}
+                    />
+                    <button type="submit" disabled={checking}>
+                      {checking ? "Checking…" : "Join"}
+                    </button>
+                  </form>
+                )}
+                {joinError && <p className="watch-error">{joinError}</p>}
               </div>
             </div>
-            {(!pendingTheme || pendingTheme === "classic") && <PopcornAndReel />}
+            <PopcornAndReel />
           </div>
         </div>
       </div>
 
       <SeatsRow />
-
-      <section className="theme-gallery">
-        <h2 className="divider-heading">
-          <span>Choose a theme</span>
-        </h2>
-        <p className="room-tag">
-          Pick the mood for your room — you can always change it once you're in.
-        </p>
-        <div className="poster-grid">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`poster-card${pendingTheme === t.id ? " active" : ""}`}
-              data-theme={t.id}
-              onClick={() => onSelectTheme(pendingTheme === t.id ? null : t.id)}
-            >
-              <span className="pixel-poster-art"><PixelTheaterScenery theme={t.id} mode="poster" /></span>
-              <span className="poster-label">{t.label}</span>
-              <span className="poster-tagline">{t.tagline}</span>
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

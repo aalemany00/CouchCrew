@@ -5,6 +5,12 @@ export default function HelpPage() {
     <div className="page help-page">
       <h1>Help &amp; FAQ</h1>
 
+      <h2>About CouchCrew</h2>
+      <p className="room-tag">
+        CouchCrew — watch movies and shows together with people who aren't in
+        the room with you. Built for TCSS 490, Artifact 4.
+      </p>
+
       <h2>Why is there a {ROOM_SIZE_CAP}-person room limit?</h2>
       <p className="room-tag">
         Two reasons, and the first one matters more: past {ROOM_SIZE_CAP} people in a video

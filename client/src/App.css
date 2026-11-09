@@ -539,6 +539,9 @@ button.secondary.leave {
   color: var(--text-dim);
 }
 
+/* A verified badge (server checks the signed-in account, not anything the
+   client claims) shown next to the one account that built this app. */
+
 .placeholder {
   border: 1px dashed var(--panel-border);
   color: var(--text-dim);
@@ -593,6 +596,13 @@ button.secondary.leave {
   justify-content: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   z-index: 35;
+}
+
+/* While the panel is open it has its own close button; the toggle would sit
+   on top of the Send button. */
+.chat-float-toggle.is-open {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .chat-unread-badge {
@@ -762,26 +772,60 @@ button.secondary.leave {
 }
 
 /* Watch player (Job 3) */
-.watch-provider-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
-  flex-wrap: wrap;
+.watch-provider-dropdown {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.75rem;
 }
 
-.provider-tab {
-  padding: 0.35rem 0.8rem;
-  font-size: 0.8rem;
-  border-radius: 999px;
-  border: 1px solid var(--panel-border);
+.provider-dropdown-toggle {
   background: transparent;
-  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+  color: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
 }
 
-.provider-tab.active {
+.dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+}
+
+.provider-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.4rem;
+  min-width: 180px;
+  list-style: none;
+  padding: 0.4rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.provider-dropdown-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.provider-dropdown-menu button:hover {
+  background: var(--accent-soft);
+}
+
+.provider-dropdown-menu button.active {
   background: var(--accent);
   color: #1a1408;
-  border-color: var(--accent);
 }
 
 .watch-load {
@@ -807,6 +851,7 @@ button.secondary.leave {
 
 .watch-frame {
   position: relative;
+  display: block;
   width: 100%;
   max-width: 100%;
   aspect-ratio: 16 / 9;
@@ -815,6 +860,18 @@ button.secondary.leave {
   background: #000;
   border: 3px solid var(--accent-soft);
   box-shadow: 0 0 20px var(--accent-soft), 0 0 2px var(--accent);
+}
+
+video.watch-frame {
+  height: 100%;
+  object-fit: contain;
+}
+
+.archive-browse-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .watch-frame[hidden] {
@@ -1136,6 +1193,16 @@ button.secondary.leave {
   margin-top: 0.75rem;
 }
 
+.ticket-button.active {
+  background: linear-gradient(180deg, #3ba55d, #2d8a4a);
+  color: #e9fff0;
+}
+
+.themes-page > .ticket-button {
+  display: block;
+  margin: 2rem auto 0;
+}
+
 .custom-code-input {
   display: block;
   margin: 0.6rem auto 0;
@@ -1321,6 +1388,27 @@ button.secondary.leave {
   border-color: #c4495a;
 }
 
+.admin-accounts {
+  margin-top: 1rem;
+}
+
+.admin-account-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-account-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
 .settings-page form,
 .profile-form {
   display: flex;
@@ -1356,6 +1444,7 @@ button.secondary.leave {
 .avatar-preview {
   width: 56px;
   height: 56px;
+  padding: 0;
   border-radius: 50%;
   background: var(--accent-soft);
   border: 1px solid var(--panel-border);
@@ -1366,6 +1455,15 @@ button.secondary.leave {
   font-size: 1.3rem;
   overflow: hidden;
   flex-shrink: 0;
+  color: var(--text);
+}
+
+.chat-avatar-button {
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  vertical-align: middle;
 }
 
 .avatar-preview img {
@@ -1378,6 +1476,167 @@ button.secondary.leave {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.member-name-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+}
+
+.member-name-button:hover {
+  text-decoration-color: currentColor;
+}
+
+.profile-form textarea {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #1c1f2b;
+  color: inherit;
+  font-family: var(--font-body);
+  resize: vertical;
+}
+
+.bio-count {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: -0.4rem;
+}
+
+/* ===== Member profile card (tap a name/avatar) ===== */
+.member-profile-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100vw - 2rem));
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  z-index: 46;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.member-profile-card .drawer-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.member-profile-avatar {
+  width: 72px;
+  height: 72px;
+  font-size: 1.6rem;
+  margin: 0 auto 0.75rem;
+}
+
+.member-profile-card h3 {
+  margin: 0 0 0.5rem;
+}
+
+.member-profile-bio {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+/* ===== Chat message layout (avatar + clickable name) ===== */
+.chat-message {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.chat-sender-name {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-sender-name:hover {
+  text-decoration: underline;
+}
+
+/* ===== Collapsible section (Settings page's Recent Rooms) ===== */
+.collapsible-section {
+  margin-bottom: 1.5rem;
+  max-width: 320px;
+}
+
+.collapsible-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: inherit;
+  font-weight: 600;
+}
+
+.collapsible-body {
+  padding: 0.75rem 0;
+}
+
+/* ===== Account (sign in/up/forgot, change password) ===== */
+.account-section {
+  max-width: 320px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.account-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.account-tabs button {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.account-tabs button.active {
+  background: var(--accent);
+  color: #1a1408;
+  border-color: var(--accent);
+}
+
+.account-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+button.danger {
+  background: #c4495a;
+  color: #fff0f1;
+}
+
+button.secondary.danger {
+  background: transparent;
+  border-color: #c4495a;
+  color: #e8828e;
 }
 
 .device-settings {
@@ -1465,4 +1724,28 @@ button.secondary.leave {
 
 .call-devices {
   margin-top: 0.75rem;
+}
+
+/* ===== One verified account's permanent name/avatar glow =====
+   Kept at the very end of the file (not with the other member-list/chat
+   rules above) so its `color` always wins the cascade over whatever
+   `color: inherit` those earlier rules set, without needing !important.
+   Fixed colors, not theme variables, so it looks the same in every room
+   theme, and it's visible the instant a name renders - no click or hover
+   needed. Whatever display name is set, this is permanent. */
+.dev-name {
+  color: #e8fbff;
+  text-shadow:
+    0 0 4px #4df1ff,
+    0 0 10px #4df1ff,
+    0 0 18px #c45dff,
+    0 0 2px #fff;
+  font-weight: 700;
+}
+
+.dev-avatar {
+  border-color: #4df1ff;
+  box-shadow:
+    0 0 6px #4df1ff,
+    0 0 14px #c45dff;
 }

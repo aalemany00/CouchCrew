@@ -4,8 +4,22 @@ import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { registerIceRoute } from "./ice.js";
+import { registerArchiveRoutes } from "./archive.js";
+import { registerAuthRoutes } from "./auth.js";
+import { getUserByToken } from "./db.js";
+import { isDeveloperEmail } from "./developer.js";
 
 const PORT = process.env.PORT || 3001;
+
+// Shows a "developer" badge next to this one account's name in every room,
+// so it can't just be typed into a display name - the server checks the
+// signed-in account behind the socket's own auth token, never anything the
+// client claims directly.
+async function isDeveloperToken(authToken) {
+  if (typeof authToken !== "string" || !authToken) return false;
+  const account = await getUserByToken(authToken);
+  return !!account && isDeveloperEmail(account.email);
+}
 const MAX_HISTORY = 50;
 const MAX_MESSAGE_LENGTH = 500;
 // A resized-on-the-client JPEG data URL comfortably fits well under this;
@@ -13,6 +27,7 @@ const MAX_MESSAGE_LENGTH = 500;
 // avatars sit in memory on every member record and get re-broadcast on
 // every presence update.
 const MAX_AVATAR_LENGTH = 200_000;
+const MAX_BIO_LENGTH = 160;
 // Past this, video call quality degrades badly (per real testing - cameras
 // stutter above 4-5 people) well before Cloudflare TURN cost is a real
 // concern. See LOG.md for the bandwidth math.
@@ -43,6 +58,8 @@ app.get("/api/room-exists/:code", (req, res) => {
 });
 
 registerIceRoute(app);
+registerArchiveRoutes(app);
+registerAuthRoutes(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -117,7 +134,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("call:peer-left", { id: socket.id });
   }
 
-  socket.on("room:join", ({ roomId, name, avatar }) => {
+  socket.on("room:join", async ({ roomId, name, avatar, bio, authToken }) => {
     const existing = rooms.get(roomId);
     if (existing && existing.size >= MAX_ROOM_SIZE && !existing.has(socket.id)) {
       socket.emit("room:full", { roomId, max: MAX_ROOM_SIZE });
@@ -127,10 +144,14 @@ io.on("connection", (socket) => {
     joinedRoomId = roomId;
     const displayName = (name || "Guest").slice(0, 40);
     const displayAvatar = typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH ? avatar : null;
+    const displayBio = typeof bio === "string" ? bio.slice(0, MAX_BIO_LENGTH) : "";
+    const isDeveloper = await isDeveloperToken(authToken);
     socket.join(roomId);
 
     if (!rooms.has(roomId)) rooms.set(roomId, new Map());
-    rooms.get(roomId).set(socket.id, { name: displayName, avatar: displayAvatar });
+    rooms
+      .get(roomId)
+      .set(socket.id, { name: displayName, avatar: displayAvatar, bio: displayBio, isDeveloper });
 
     // First person into an empty room leads it.
     if (!roomLeaders.has(roomId)) roomLeaders.set(roomId, socket.id);
@@ -166,24 +187,34 @@ io.on("connection", (socket) => {
     const trimmed = typeof text === "string" ? text.trim().slice(0, MAX_MESSAGE_LENGTH) : "";
     if (!roomId || !trimmed) return;
     const member = rooms.get(roomId)?.get(socket.id);
+    // Avatar/bio are snapshotted onto the message at send time (like most
+    // chat apps) rather than looked up live from `rooms` when rendered -
+    // that still works for history after the sender has left the room, and
+    // doesn't retroactively change what an old message shows if they later
+    // update their profile.
     const message = addMessage(roomId, {
       id: `${socket.id}-${Date.now()}`,
+      senderId: socket.id,
       name: member?.name || "Guest",
+      avatar: member?.avatar || null,
+      bio: member?.bio || "",
+      isDeveloper: !!member?.isDeveloper,
       text: trimmed,
       at: Date.now(),
     });
     io.to(roomId).emit("chat:message", message);
   });
 
-  // Lets someone update their own name/avatar without leaving and rejoining
-  // the room - e.g. from the in-room settings drawer. Only ever touches the
-  // sender's own member record.
-  socket.on("profile:update", ({ roomId, name, avatar }) => {
+  // Lets someone update their own name/avatar/bio without leaving and
+  // rejoining the room - e.g. from the in-room settings drawer. Only ever
+  // touches the sender's own member record.
+  socket.on("profile:update", ({ roomId, name, avatar, bio }) => {
     const member = rooms.get(roomId)?.get(socket.id);
     if (!member) return;
     if (typeof name === "string" && name.trim()) member.name = name.trim().slice(0, 40);
     if (avatar === null) member.avatar = null;
     else if (typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH) member.avatar = avatar;
+    if (typeof bio === "string") member.bio = bio.slice(0, MAX_BIO_LENGTH);
     io.to(roomId).emit("room:presence", roomState(roomId));
   });
 

@@ -7,7 +7,7 @@ export function getRoute() {
   const path = window.location.pathname;
   const roomMatch = path.match(ROOM_PATH_RE);
   if (roomMatch) return { page: "room", roomId: roomMatch[1].toLowerCase() };
-  if (path === "/rooms") return { page: "rooms" };
+  if (path === "/create") return { page: "create" };
   if (path === "/themes") return { page: "themes" };
   if (path === "/settings") return { page: "settings" };
   if (path === "/help") return { page: "help" };

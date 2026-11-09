@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "../lib/socket";
 import { THEME_EASTER_EGGS } from "../lib/theater";
 import { getSavedAvatar } from "../lib/avatar";
+import { getSavedBio } from "../lib/profile";
+import { getToken } from "../lib/auth";
 import ChatPanel from "./ChatPanel";
 import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
@@ -27,6 +29,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const amLeader = connected && leaderId === socket.id;
+  const videoPanelRef = useRef(null);
 
   const marqueeClicksRef = useRef([]);
   const toastTimeoutRef = useRef(null);
@@ -94,8 +97,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
   // Pushes a name/avatar change made in the room settings drawer to the
   // server right away, instead of only taking effect on the next rejoin.
-  function handleProfileSave({ name, avatar }) {
-    socket.emit("profile:update", { roomId, name, avatar });
+  function handleProfileSave({ name, avatar, bio }) {
+    socket.emit("profile:update", { roomId, name, avatar, bio });
   }
 
   // Hold-to-leave: holding for 3s shows a theatrical pause, then leaves. A
@@ -132,7 +135,13 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     // own, but it doesn't know about our room concept).
     function handleConnect() {
       setConnected(true);
-      socket.emit("room:join", { roomId, name, avatar: getSavedAvatar() });
+      socket.emit("room:join", {
+        roomId,
+        name,
+        avatar: getSavedAvatar(),
+        bio: getSavedBio(),
+        authToken: getToken(),
+      });
     }
     function handleDisconnect() {
       setConnected(false);
@@ -278,8 +287,12 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             touching WatchPlayer/VideoPanel's own markup — Henry's upcoming
             WebRTC rebuild of VideoPanel can drop in here unchanged. */}
         <div className="screen-stack">
-          <WatchPlayer roomId={roomId} isLeader={amLeader} />
-          <VideoPanel roomId={roomId} />
+          <WatchPlayer
+            roomId={roomId}
+            isLeader={amLeader}
+            onShareScreen={() => videoPanelRef.current?.shareScreen()}
+          />
+          <VideoPanel ref={videoPanelRef} roomId={roomId} />
         </div>
       </div>
       <ChatPanel roomId={roomId} onFlourish={playFlourish} onToast={showToast} />

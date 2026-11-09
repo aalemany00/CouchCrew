@@ -1,9 +1,13 @@
-import { generateRoomCode } from "./roomCode";
+import { generateRoomCode, generateRandomSuffix } from "./roomCode";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 const MAX_SUFFIX_TRIES = 30;
 
-async function roomExists(code) {
+// Exported so Home's "Join with a code" can tell an empty/mistyped code
+// apart from a real one before navigating - landing someone in a brand new,
+// empty room under a code they mistyped (instead of their friend's room)
+// would look like nothing happened, with no indication anything was wrong.
+export async function checkRoomExists(code) {
   try {
     const res = await fetch(`${SERVER_URL}/api/room-exists/${encodeURIComponent(code)}`, {
       signal: AbortSignal.timeout(4000),
@@ -12,9 +16,9 @@ async function roomExists(code) {
     const body = await res.json();
     return !!body.exists;
   } catch {
-    // Server unreachable — don't block room creation over it, just go
-    // ahead with the requested code as if it were free.
-    return false;
+    // Server unreachable - let the caller decide how to handle "unknown"
+    // rather than silently treating it as "doesn't exist".
+    return null;
   }
 }
 
@@ -25,10 +29,10 @@ export async function claimRoomCode(desired) {
   const base = (desired || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
   if (!base) return generateRoomCode();
 
-  if (!(await roomExists(base))) return base;
+  if (!(await checkRoomExists(base))) return base;
   for (let n = 2; n < MAX_SUFFIX_TRIES; n++) {
     const candidate = `${base}-${n}`;
-    if (!(await roomExists(candidate))) return candidate;
+    if (!(await checkRoomExists(candidate))) return candidate;
   }
-  return `${base}-${generateRoomCode(4)}`;
+  return `${base}-${generateRandomSuffix(4)}`;
 }
