@@ -231,6 +231,21 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
   const [liveChannel, setLiveChannel] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Movie volume: purely local (never sent to the room), remembered in this
+  // browser. Applies to the YouTube and Archive.org players; the live-stream
+  // embeds (Twitch/Kick) are cross-origin iframes we can't control.
+  const [movieVol, setMovieVol] = useState(() => {
+    try {
+      const saved = localStorage.getItem("couchcrew:movieVolume");
+      const v = saved === null ? NaN : Number(saved); // nothing saved yet -> full volume (Number(null) would be 0)
+      return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 100;
+    } catch {
+      return 100;
+    }
+  });
+  const [movieMuted, setMovieMuted] = useState(false);
+  const movieAudioRef = useRef({ vol: 100, muted: false });
+
   const providerRef = useRef(provider);
   useEffect(() => {
     providerRef.current = provider;
@@ -249,6 +264,30 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
   const playerRef = useRef(null);
   const archiveVideoElRef = useRef(null);
   const readyRef = useRef(false);
+
+  const applyMovieAudio = useCallback(() => {
+    const { vol, muted } = movieAudioRef.current;
+    const yt = playerRef.current;
+    if (readyRef.current && yt?.setVolume) {
+      yt.setVolume(vol);
+      if (muted) yt.mute();
+      else yt.unMute();
+    }
+    const el = archiveVideoElRef.current;
+    if (el) {
+      el.volume = vol / 100;
+      el.muted = muted;
+    }
+  }, []);
+  useEffect(() => {
+    movieAudioRef.current = { vol: movieVol, muted: movieMuted };
+    applyMovieAudio();
+    try {
+      localStorage.setItem("couchcrew:movieVolume", String(movieVol));
+    } catch {
+      /* remembering the volume is a convenience only */
+    }
+  }, [movieVol, movieMuted, provider, hasVideo, applyMovieAudio]);
   const videoIdRef = useRef(null);
   const pendingRef = useRef(null); // state to apply once the player is ready
   const suppressUntilRef = useRef(0);
@@ -340,6 +379,7 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
         events: {
           onReady: () => {
             readyRef.current = true;
+            applyMovieAudio();
             // A recreated player (hot reload) restores whatever was playing
             // - but only if that was actually a YouTube video; a state
             // saved while Archive.org was active belongs to the <video>
@@ -372,7 +412,7 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
       playerRef.current?.destroy?.();
       playerRef.current = null;
     };
-  }, [applyState, currentState, send]);
+  }, [applyState, currentState, send, applyMovieAudio]);
 
   // Incoming sync events from the rest of the room.
   useEffect(() => {
@@ -876,6 +916,30 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
           title={`${liveConfig.label} stream`}
           allowFullScreen
         />
+      )}
+      {hasVideo && (provider === "youtube" || provider === "archive") && (
+        <div className="movie-volume" title="Movie volume (only changes it for you)">
+          <button
+            type="button"
+            className="secondary"
+            aria-label={movieMuted || movieVol === 0 ? "Unmute the movie" : "Mute the movie"}
+            onClick={() => setMovieMuted((m) => !m)}
+          >
+            {movieMuted || movieVol === 0 ? "🔇" : "🔊"}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={movieMuted ? 0 : movieVol}
+            aria-label="Movie volume (only for you)"
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setMovieVol(v);
+              setMovieMuted(v === 0);
+            }}
+          />
+        </div>
       )}
       {!hasVideo && <p className="room-tag">Nothing playing yet. Room: {roomId}</p>}
     </div>
