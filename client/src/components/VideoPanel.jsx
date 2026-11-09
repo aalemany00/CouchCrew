@@ -6,7 +6,7 @@
 // -> this. See LOG.md.
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { socket } from "../lib/socket";
-import { getDevicePrefs } from "../lib/devicePrefs";
+import { getDevicePrefs, setDevicePref } from "../lib/devicePrefs";
 
 // Browsers behind different networks usually need a TURN relay to reach each
 // other. The server hands out short-lived relay credentials (GET /ice); if
@@ -100,27 +100,198 @@ function attachTrack(pc, track, stream) {
   return pc.addTrack(track, stream);
 }
 
-function Tile({ stream, name, muted = false, mirror = false, videoOn, screen = false, status, micOff }) {
+// Speaker choice is ours (the settings drawer only covers mic and camera), and
+// only browsers that can route audio to a chosen output (setSinkId) get it.
+const SPEAKER_KEY = "couchcrew:speakerDeviceId";
+const CAN_PICK_SPEAKER = typeof HTMLMediaElement !== "undefined" && "setSinkId" in HTMLMediaElement.prototype;
+
+function loadSpeakerPref() {
+  try {
+    return localStorage.getItem(SPEAKER_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+let audioCtx;
+function getAudioContext() {
+  if (!audioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    audioCtx = new Ctx();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+// How loud a stream is right now, as 0-5, for the little meter on each tile.
+// Works on remote streams too, so you can see whose mic is making noise even
+// after you've muted them on your end.
+function useAudioLevel(stream, audioKey) {
+  const [level, setLevel] = useState(0);
+  useEffect(() => {
+    if (!stream || !stream.getAudioTracks().length) return undefined;
+    const ctx = getAudioContext();
+    if (!ctx) return undefined;
+    const source = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    const data = new Uint8Array(analyser.fftSize);
+    let last = 0;
+    // setInterval, not requestAnimationFrame, so it keeps running in a
+    // background tab.
+    const timer = setInterval(() => {
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (const v of data) sum += ((v - 128) / 128) ** 2;
+      const next = Math.min(5, Math.round(Math.sqrt(sum / data.length) * 20));
+      if (next !== last) {
+        last = next;
+        setLevel(next);
+      }
+    }, 100);
+    return () => {
+      clearInterval(timer);
+      source.disconnect();
+      setLevel(0);
+    };
+  }, [stream, audioKey]);
+  return level;
+}
+
+// `listen` is only set on other people's tiles: { muted, volume } is how *you*
+// hear them, and never affects what anyone else hears.
+function Tile({
+  stream,
+  name,
+  muted = false,
+  mirror = false,
+  videoOn,
+  screen = false,
+  status,
+  micOff,
+  sinkId,
+  listen,
+  onListenChange,
+  showMeter = false,
+}) {
   const ref = useRef(null);
   useEffect(() => {
     if (ref.current && ref.current.srcObject !== stream) ref.current.srcObject = stream || null;
   }, [stream]);
+  const listenMuted = !!listen?.muted;
+  const listenVolume = listen ? listen.volume : 1;
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    v.muted = muted || listenMuted;
+    v.volume = listenVolume;
+  }, [muted, listenMuted, listenVolume]);
+  useEffect(() => {
+    const v = ref.current;
+    if (v && sinkId !== undefined && v.setSinkId) v.setSinkId(sinkId || "").catch(() => {});
+  }, [sinkId, stream]);
+
+  const audioKey = stream
+    ? stream
+        .getAudioTracks()
+        .map((t) => t.id)
+        .join(",")
+    : "";
+  const level = useAudioLevel(showMeter ? stream : null, audioKey);
   const showVideo = screen || videoOn;
   return (
-    <div className={`video-tile${screen ? " screen" : ""}`}>
+    <div className={`video-tile${screen ? " screen" : ""}${level >= 2 ? " speaking" : ""}`}>
       <video
         ref={ref}
         autoPlay
         playsInline
-        muted={muted}
         className={`${mirror ? "mirror" : ""}${showVideo ? "" : " hidden"}`}
       />
       {!showVideo && <div className="video-tile-initial">{(name || "?").charAt(0).toUpperCase()}</div>}
+      {listen && (
+        <div className="video-tile-listen">
+          <button
+            type="button"
+            className="secondary"
+            aria-label={`${listen.muted ? "Unmute" : "Mute"} ${name} for you`}
+            title={listen.muted ? "Unmute for you" : "Mute for you"}
+            onClick={() => onListenChange({ muted: !listen.muted })}
+          >
+            {listen.muted ? "🔇" : "🔊"}
+          </button>
+          {!listen.muted && (
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(listen.volume * 100)}
+              aria-label={`${name} volume`}
+              onChange={(e) => onListenChange({ volume: Number(e.target.value) / 100 })}
+            />
+          )}
+        </div>
+      )}
+      {showMeter && !screen && (
+        <span className="video-tile-meter" aria-hidden="true">
+          <span style={{ width: `${level * 20}%` }} />
+        </span>
+      )}
       <span className="video-tile-name">
         {screen ? `${name}'s screen` : name}
         {micOff ? " 🔇" : ""}
+        {listen?.muted ? " (muted by you)" : ""}
         {status ? ` · ${status}` : ""}
       </span>
+    </div>
+  );
+}
+
+// Mic / camera / speaker pickers for use during a call. Mic and camera switch
+// live; the speaker applies to everyone's audio on this device.
+function DevicePanel({ micId, camId, speakerId, onPick }) {
+  const [devices, setDevices] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      try {
+        const list = await navigator.mediaDevices.enumerateDevices();
+        if (alive) setDevices(list);
+      } catch {
+        // leave the lists empty
+      }
+    }
+    load();
+    navigator.mediaDevices?.addEventListener?.("devicechange", load);
+    return () => {
+      alive = false;
+      navigator.mediaDevices?.removeEventListener?.("devicechange", load);
+    };
+  }, []);
+
+  function select(label, kind, pickKind, value, fallback) {
+    const list = devices.filter((d) => d.kind === kind);
+    return (
+      <>
+        <label htmlFor={`call-${pickKind}`}>{label}</label>
+        <select id={`call-${pickKind}`} value={value} onChange={(e) => onPick(pickKind, e.target.value)}>
+          <option value="">System default</option>
+          {list.map((d) => (
+            <option key={d.deviceId} value={d.deviceId}>
+              {d.label || fallback}
+            </option>
+          ))}
+        </select>
+      </>
+    );
+  }
+
+  return (
+    <div className="device-settings call-devices">
+      {select("Microphone", "audioinput", "mic", micId, "Microphone")}
+      {select("Camera", "videoinput", "cam", camId, "Camera")}
+      {CAN_PICK_SPEAKER && select("Speaker", "audiooutput", "speaker", speakerId, "Speaker")}
     </div>
   );
 }
@@ -135,8 +306,12 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
   const [notice, setNotice] = useState("");
   const [startMic, setStartMic] = useState(true);
   const [startCam, setStartCam] = useState(true);
-  const [local, setLocal] = useState({ stream: null, mic: false, cam: false, screen: null });
+  const [local, setLocal] = useState({ stream: null, mic: false, cam: false, screen: null, micId: "", camId: "" });
   const [peerList, setPeerList] = useState([]);
+  const [showDevices, setShowDevices] = useState(false);
+  const [speakerId, setSpeakerId] = useState(loadSpeakerPref);
+  // How I hear each other person (mute / volume), by their socket id.
+  const [listenPrefs, setListenPrefs] = useState({});
 
   // All the live call machinery lives in refs so socket and WebRTC callbacks
   // always see current state; React state above is just what gets rendered.
@@ -185,11 +360,14 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
     const call = callRef.current;
     if (!call || !mountedRef.current) return;
     const audio = call.localStream.getAudioTracks()[0];
+    const video = call.localStream.getVideoTracks()[0];
     setLocal({
       stream: call.localStream,
       mic: !!audio && audio.enabled,
-      cam: call.localStream.getVideoTracks().length > 0,
+      cam: !!video,
       screen: call.screenStream,
+      micId: audio?.getSettings().deviceId || "",
+      camId: video?.getSettings().deviceId || "",
     });
   }
 
@@ -363,7 +541,9 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
     if (updateUi && mountedRef.current) {
       setStatus("idle");
       setPeerList([]);
-      setLocal({ stream: null, mic: false, cam: false, screen: null });
+      setListenPrefs({});
+      setShowDevices(false);
+      setLocal({ stream: null, mic: false, cam: false, screen: null, micId: "", camId: "" });
     }
   }
 
@@ -435,6 +615,63 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
       call.localStream.addTrack(t);
       call.peers.forEach((p) => attachTrack(p.pc, t, call.localStream));
     });
+  }
+
+  // Switch mic or camera without leaving the call: swap the live track on every
+  // connection (no renegotiation needed). If that device isn't on right now the
+  // choice is just saved for the next time it is.
+  async function pickDevice(kind, deviceId) {
+    if (kind === "speaker") {
+      setSpeakerId(deviceId);
+      try {
+        localStorage.setItem(SPEAKER_KEY, deviceId);
+      } catch {
+        // just a saved preference
+      }
+      return;
+    }
+    setDevicePref(kind, deviceId);
+    const call = callRef.current;
+    if (!call) return;
+    const trackKind = kind === "mic" ? "audio" : "video";
+    const old = call.localStream.getTracks().find((t) => t.kind === trackKind);
+    if (!old) return;
+    try {
+      const constraint = deviceId
+        ? { deviceId: { exact: deviceId } }
+        : kind === "mic"
+          ? true
+          : { facingMode: "user" };
+      const stream = await navigator.mediaDevices.getUserMedia(
+        kind === "mic" ? { audio: constraint } : { video: constraint },
+      );
+      const fresh = stream.getTracks()[0];
+      if (!callRef.current) {
+        fresh.stop();
+        return;
+      }
+      fresh.enabled = old.enabled;
+      call.peers.forEach((p) => {
+        p.pc
+          .getSenders()
+          .find((s) => s.track === old)
+          ?.replaceTrack(fresh);
+      });
+      call.localStream.removeTrack(old);
+      old.stop();
+      call.localStream.addTrack(fresh);
+      publishLocal();
+    } catch {
+      setNotice(`Couldn't switch your ${kind === "mic" ? "microphone" : "camera"}.`);
+    }
+  }
+
+  function listenFor(id) {
+    return { muted: false, volume: 1, ...listenPrefs[id] };
+  }
+
+  function changeListen(id, patch) {
+    setListenPrefs((prev) => ({ ...prev, [id]: { muted: false, volume: 1, ...prev[id], ...patch } }));
   }
 
   async function toggleMic() {
@@ -551,9 +788,26 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
             {peerList
               .filter((p) => p.screen)
               .map((p) => (
-                <Tile key={`${p.id}-screen`} stream={p.screen} name={p.name} videoOn screen />
+                <Tile
+                  key={`${p.id}-screen`}
+                  stream={p.screen}
+                  name={p.name}
+                  videoOn
+                  screen
+                  sinkId={speakerId}
+                  listen={listenFor(p.id)}
+                  onListenChange={(patch) => changeListen(p.id, patch)}
+                />
               ))}
-            <Tile stream={local.stream} name={`${myName} (you)`} muted mirror videoOn={local.cam} micOff={!local.mic} />
+            <Tile
+              stream={local.stream}
+              name={`${myName} (you)`}
+              muted
+              mirror
+              videoOn={local.cam}
+              micOff={!local.mic}
+              showMeter
+            />
             {peerList.map((p) => (
               <Tile
                 key={p.id}
@@ -561,6 +815,10 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
                 name={p.name}
                 videoOn={p.camOn && !!p.cam?.getVideoTracks().length}
                 micOff={!p.micOn}
+                showMeter
+                sinkId={speakerId}
+                listen={listenFor(p.id)}
+                onListenChange={(patch) => changeListen(p.id, patch)}
                 status={
                   p.connState === "connected" ? "" : p.connState === "failed" ? "can't connect" : "connecting…"
                 }
@@ -568,6 +826,9 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
             ))}
           </div>
           <p className="video-diag-count">In the call: {peerList.length + 1}</p>
+          {showDevices && (
+            <DevicePanel micId={local.micId} camId={local.camId} speakerId={speakerId} onPick={pickDevice} />
+          )}
           <div className="video-controls">
             <button type="button" className={local.mic ? "" : "off"} onClick={toggleMic}>
               {local.mic ? "Mute" : "Unmute"}
@@ -580,6 +841,9 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
                 {local.screen ? "Stop sharing" : "Share screen"}
               </button>
             )}
+            <button type="button" className="secondary" onClick={() => setShowDevices((v) => !v)}>
+              Devices
+            </button>
             <button type="button" className="secondary leave" onClick={() => endCall()}>
               Leave call
             </button>
