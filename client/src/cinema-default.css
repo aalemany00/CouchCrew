@@ -463,3 +463,38 @@
     height: 26px; box-sizing: border-box;
   }
 }
+
+/* ---------- Shared screens take over the big screen ----------
+   A shared screen is shown in the marquee frame where the movie normally plays,
+   not as an extra tile; the seats below stay people-only. Several shares split
+   the picture side by side. */
+.screen-tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.screen-tiles .video-tile.screen { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: 0; box-shadow: none; background: #000; }
+.screen-tiles .video-tile.screen video { object-fit: contain; border-radius: 0; background: #000; }
+.screen-tiles .video-tile-listen { top: 8px; right: 8px; opacity: .55; transition: opacity .2s; }
+.screen-tiles .video-tile-listen:hover, .screen-tiles .video-tile-listen:focus-within { opacity: 1; }
+.screen-tiles .video-tile-listen input[type="range"] { width: 80px; }
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .screen-tiles {
+    position: absolute; z-index: 3; left: 50%; margin-left: calc(var(--sw) / -2); top: var(--inset);
+    width: var(--sw); height: calc(var(--sw) * .5625); border-radius: 3px; overflow: hidden;
+  }
+}
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .screen-tiles .video-tile-name { left: 32px; top: 10px; }
+  .cinema-shell[data-theme] .screen-tiles .video-tile-listen { right: 34px; top: 10px; }
+}
+
+/* Local switch between the shared screen and the movie (only offered while a movie is loaded). */
+.screen-tiles.away { display: none; }
+.screen-switch { display: none; }
+.screen-stack:has(.watch-frame:not([hidden])) .screen-switch { display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .screen-tiles.away { display: grid; visibility: hidden; }  /* keeps playing, just not shown */
+  .cinema-shell[data-theme] .screen-switch {
+    position: absolute; z-index: 6; left: 50%; margin-left: calc(var(--sw) / -2 + 6px);
+    top: calc(var(--inset) + var(--sw) * .5625 + (var(--inset) - 26px) / 2);
+    height: 26px; min-height: 0; padding: 0 12px; box-sizing: border-box; font-size: .75rem; border-radius: 13px;
+    background: rgba(12, 6, 10, .88); border: 1px solid rgba(255, 190, 120, .4); color: #f3e9dc;
+  }
+}
