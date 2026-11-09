@@ -375,3 +375,35 @@
 .cm-card .ce-ticket { height: 66px; }
 .cm-card .ce-code { padding: 0; background: none; border: 0; box-shadow: none; }
 .cm-card .ce-code input, .cm-card .ce-code button { height: 44px; font-size: 14px; }
+
+/* ---------- Devices menu (mic / camera / speaker) ----------
+   The picker used to sit in the page flow above the controls, which pushed it
+   down into the seats (they're pinned to the bottom of the window). It now
+   floats as a card over the screen area; the Devices button stays visible and
+   clickable below it, and the seats are never covered. */
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .call-devices {
+    position: fixed; top: 112px; left: 50%; transform: translateX(-50%); z-index: 70;
+    width: min(calc(100vw - 24px), 460px); margin: 0; box-sizing: border-box;
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; align-items: center;
+    padding: 14px 16px; border-radius: 14px;
+    background: rgba(12, 6, 10, .95); border: 1px solid rgba(255, 190, 120, .5);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .7), 0 0 28px rgba(255, 170, 80, .18);
+  }
+  .cinema-shell[data-theme] .call-devices label { margin: 0; font-size: .8rem; color: #ffd596; }
+  .cinema-shell[data-theme] .call-devices select { width: 100%; min-width: 0; }
+}
+
+/* ---------- First-visit tips card ----------
+   Also floats over the screen area instead of pushing the room down: in the
+   flow it added ~230px, which shoved the controls behind the seats and made
+   the page scroll. "Got it" (and the ? button) still work as before. */
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .room-tips {
+    position: fixed; top: 92px; left: 50%; transform: translateX(-50%); z-index: 60;
+    width: min(calc(100vw - 24px), 560px); max-height: calc(100dvh - 120px); overflow-y: auto;
+    margin: 0; box-sizing: border-box;
+    background: rgba(12, 6, 10, .95); border: 1px solid rgba(255, 190, 120, .5); border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .7), 0 0 28px rgba(255, 170, 80, .18);
+  }
+}
