@@ -446,3 +446,20 @@
     width: calc(var(--pw) - 10px); height: clamp(30px, calc(var(--t, 176px) * .45), 72px); margin: 0; padding: 0;
   }
 }
+
+/* ---------- Movie volume (local to each viewer) ----------
+   A small pill for the movie's own volume, separate from the per-person voice
+   sliders. In the cinema room it sits in the marquee's bottom bulb band, right
+   of the picture, so it never covers the video or adds any height. */
+.movie-volume { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 4px; border-radius: 16px;
+  background: rgba(12, 6, 10, .88); border: 1px solid rgba(255, 190, 120, .4); }
+.movie-volume button { min-width: 0; min-height: 0; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; font-size: .85rem; line-height: 1; }
+.movie-volume input[type="range"] { width: 96px; margin: 0; }
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .movie-volume {
+    position: absolute; z-index: 6;
+    right: calc(var(--inset) + 6px);
+    top: calc(var(--inset) + var(--sw) * .5625 + (var(--inset) - 26px) / 2);
+    height: 26px; box-sizing: border-box;
+  }
+}
