@@ -428,3 +428,21 @@
   .cinema-shell[data-theme] .video-tile:has(> video:not(.hidden))::after { opacity: .22; box-shadow: none; }
 }
 .leave-confirm-actions .leave { background: #c8302f; border-color: #ff8a80; color: #fff; }
+/* ---------- Per-person volume: moved off the face, into the gap beside the seat ----------
+   It used to sit on the top-right of the tile, covering the person. Now it's a
+   slim vertical pill (speaker button over an upright slider) centered in the
+   gap to the right of the tile; the gap is half a seat wide at every seat size. */
+@media (min-width: 380px) {
+  .cinema-shell[data-theme] .video-tile:not(.screen) .video-tile-listen {
+    --pw: min(30px, calc(var(--t, 176px) * .4));   /* slimmer on small seats so it always fits the gap */
+    top: 0; left: auto; right: calc(var(--t, 176px) * -.25 - var(--pw) / 2); z-index: 5;
+    width: var(--pw); box-sizing: border-box; padding: 3px 0 7px; gap: 4px;
+    flex-direction: column; align-items: center; border-radius: 15px;
+    background: rgba(12, 6, 10, .88); border: 1px solid rgba(255, 190, 120, .4);
+  }
+  .cinema-shell[data-theme] .video-tile:not(.screen) .video-tile-listen button { min-width: 0; min-height: 0; width: calc(var(--pw) - 4px); height: calc(var(--pw) - 4px); font-size: .8rem; line-height: 1; }
+  .cinema-shell[data-theme] .video-tile:not(.screen) .video-tile-listen input[type="range"] {
+    writing-mode: vertical-lr; direction: rtl;   /* upright, loudest at the top */
+    width: calc(var(--pw) - 10px); height: clamp(30px, calc(var(--t, 176px) * .45), 72px); margin: 0; padding: 0;
+  }
+}
