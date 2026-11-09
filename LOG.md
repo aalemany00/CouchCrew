@@ -5,6 +5,76 @@ whenever something real is decided, built, or abandoned. Newest entry on top.
 
 ---
 
+## 2026-11-08 — Realistic cinema look for every theme, room polish, volume controls, shared screen on the big screen (John)
+
+**Who:** John, with Claude Code, over PRs #41, #46, #48, #49, #50, #51 and the
+shared-screen PR. Touches Adrian's files (`RoomView.jsx`, `App.css`, home/entrance
+pages) and Henry's (`VideoPanel.jsx`) — each PR flagged them for review.
+
+**What we built:**
+- **One cinema look for all 8 themes (replaces the retro drive-in rooms).**
+  After Henry and Adrian said the old themed theaters should go and the new
+  interface should be the one consistent look, every theme now uses the cinema
+  scene: marquee-bulb frame, pleated curtains that draw back once on entry,
+  seats along the bottom. Genre themes only tint it with their accent color.
+  Theme cards on the Themes page still show their own poster art. Styles live in
+  `client/src/cinema-default.css` (every selector scoped to
+  `.cinema-shell[data-theme]`), so it doesn't touch the old class names Jobs 2/3
+  render into.
+- **Entrance (home page):** a 1280×820 stage scaled to fit any window so it no
+  longer cuts off on widescreen monitors, with side fill and shadows, plus a
+  stacked compact version for narrow windows and phones.
+- **Fits one screen:** from 600px wide and 540px tall the room (picture, controls,
+  link bar, seats) fits without scrolling, sized from the window height. Smaller
+  windows scroll normally. Phones from 380px get the same theater, shrunk.
+- **Curtains and animation fixes:** curtains now have real folds (fixed-pixel
+  pleats) instead of a solid sheet; the soda-fill animation and lollipops no
+  longer slide in from the side (SVG elements needed `transform-box: fill-box`).
+- **Snack buttons in chat** (popcorn, candy, etc.) now have sound effects and an
+  emoji burst (`lib/snackFx.js`, synthesized with WebAudio — no audio files).
+- **Devices menu and first-visit tips** float over the screen area, so seats and
+  chairs can no longer cover them.
+- **Leaving a room** now asks "Leave the room?" with Yes/No (Esc cancels) instead
+  of the hold-to-leave easter egg, which auto-kicked people out without a choice.
+- **Seat shows the camera:** the chair turns see-through when a camera is on, so
+  it no longer cuts off half the video.
+- **Per-person volume:** a slim vertical slider in the gap beside each seat (not
+  over faces), sized from the seat width so it fits at every size.
+- **Movie volume (local only):** a pill in the marquee's bottom bulb band for
+  YouTube and Archive.org. It only changes volume for that viewer (no socket
+  event), remembers the level in `localStorage` (`couchcrew:movieVolume`), and is
+  hidden for Twitch/Kick/screen share, which can't be controlled that way.
+- **Shared screen becomes the main screen:** when anyone shares their screen it
+  plays in the marquee frame instead of as an extra tile above the seats; the
+  seats stay people-only. Several shares split the picture side by side. If a
+  movie is also loaded, a small "Show movie / Show shared screen" button under
+  the screen switches *your own* view (the hidden one keeps playing, so audio
+  and sync aren't lost). `VideoPanel.jsx` now renders shared screens in a
+  `.screen-tiles` layer; room-tag text in `WatchPlayer.jsx` updated to match.
+
+**Bugs found along the way:**
+- **Production build broken twice by an unclosed `{` in CSS** (PR #48: missing
+  `}` in `App.css`; the movie-volume patch later: a new CSS block landed inside
+  the previous rule). Vite's dev server tolerates this; the production build
+  (and Vercel) fails. It also silently re-enabled some of Henry's speaking-ring
+  and meter styles once fixed. **Rule now:** run `cd client && npm run build`
+  before every push; the Vercel check failing on a PR means don't merge it.
+- A first layout attempt stacked cards in Adrian's room after a merge; the
+  cinema layout is now CSS-only on top of the existing markup.
+- The movie volume defaulted to 0 on a fresh browser (`Number(null)`); now 100.
+
+**Tested:** Playwright with fake camera/mic and a mocked YouTube player at
+1920×1080, 1378×687, 800×700 and phone width, including two-person calls, a
+fake screen share, and the movie/screen switch. Clean `npm ci && npm run build`
+on `main` plus each patch.
+
+**Not yet checked:** real YouTube/Archive.org volume changes and a real
+browser-tab share with sound (the sandbox can't reach YouTube); small phones
+(seats are tiny and the chat bubble can cover the last volume slider); the
+two walkers on the entrance can briefly overlap at the start.
+
+---
+
 ## 2026-11-05 — First-visit room tips and leader-set room name (Henry, touches Job 1's files)
 
 **Who:** Henry, with Claude Code, on `feature/room-hint-rename`. These are
