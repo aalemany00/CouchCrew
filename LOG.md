@@ -481,6 +481,40 @@ normally. No console errors.
 
 ---
 
+## 2026-11-05 — Call controls: live device switching, volume meters, per-person mute (Job 2)
+
+**Who:** Henry, with Claude Code, on `feature/call-controls`.
+
+**Context:** `main` already had a mic/camera picker (room settings drawer and
+nav bar, Adrian) that only took effect the next time you joined the call, and
+nothing for speakers, loudness or muting one person.
+
+**What we built (all in `VideoPanel.jsx` + CSS):**
+- **Devices** button in the call: mic, camera and speaker pickers. Mic and
+  camera switch live (the new track replaces the old one on every connection,
+  no reconnect) and save to the same preference the settings drawer uses.
+  Speaker uses `setSinkId`, so it only appears in browsers that support it
+  (not iOS Safari).
+- **Volume meter** on every tile, plus a green "speaking" ring. It also works
+  on other people's tiles, so you can see whose mic is noisy.
+- **Per-person mute and volume** on other people's tiles (🔊 button + slider).
+  This only changes what *you* hear; it doesn't affect anyone else. The meter
+  keeps running while someone is muted for you, so you can tell if they're
+  still making noise.
+
+**Tested:** two browser tabs against a local server with a fake mic/camera:
+meters light up on both local and remote tiles; muting/lowering a person
+changes only my side; swapping to a silent mic in the Devices panel made the
+other tab's meter for me drop to zero while video kept flowing.
+
+**Not yet verified:** real devices (actual mic/speaker lists and the speaker
+picker need a real browser), and the tile controls on a phone-width screen.
+
+---
+
+
+---
+
 ## 2026-11-05 — Mic/camera settings reachable from the nav bar, not just a room
 
 **Who:** Adrian, with Claude Code. The 🎙️/🎥 icons in the top-right of the
