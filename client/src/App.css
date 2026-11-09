@@ -1716,6 +1716,8 @@ button.secondary.danger {
   border: 1px solid #3a3d4d;
   background: #1c1f2b;
   color: inherit;
+}
+
 /* Call extras (Job 2): loudness meter, "speaking" ring, per-person volume and
    the in-call device picker. */
 .video-tile.speaking {
