@@ -4,8 +4,22 @@ import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { registerIceRoute } from "./ice.js";
+import { registerArchiveRoutes } from "./archive.js";
+import { registerAuthRoutes } from "./auth.js";
+import { getUserByToken } from "./db.js";
+import { isDeveloperEmail } from "./developer.js";
 
 const PORT = process.env.PORT || 3001;
+
+// Shows a "developer" badge next to this one account's name in every room,
+// so it can't just be typed into a display name - the server checks the
+// signed-in account behind the socket's own auth token, never anything the
+// client claims directly.
+async function isDeveloperToken(authToken) {
+  if (typeof authToken !== "string" || !authToken) return false;
+  const account = await getUserByToken(authToken);
+  return !!account && isDeveloperEmail(account.email);
+}
 const MAX_HISTORY = 50;
 const MAX_MESSAGE_LENGTH = 500;
 // A resized-on-the-client JPEG data URL comfortably fits well under this;
@@ -44,6 +58,8 @@ app.get("/api/room-exists/:code", (req, res) => {
 });
 
 registerIceRoute(app);
+registerArchiveRoutes(app);
+registerAuthRoutes(app);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -123,7 +139,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("call:peer-left", { id: socket.id });
   }
 
-  socket.on("room:join", ({ roomId, name, avatar, bio }) => {
+  socket.on("room:join", async ({ roomId, name, avatar, bio, authToken }) => {
     const existing = rooms.get(roomId);
     if (existing && existing.size >= MAX_ROOM_SIZE && !existing.has(socket.id)) {
       socket.emit("room:full", { roomId, max: MAX_ROOM_SIZE });
@@ -134,10 +150,13 @@ io.on("connection", (socket) => {
     const displayName = (name || "Guest").slice(0, 40);
     const displayAvatar = typeof avatar === "string" && avatar.length <= MAX_AVATAR_LENGTH ? avatar : null;
     const displayBio = typeof bio === "string" ? bio.slice(0, MAX_BIO_LENGTH) : "";
+    const isDeveloper = await isDeveloperToken(authToken);
     socket.join(roomId);
 
     if (!rooms.has(roomId)) rooms.set(roomId, new Map());
-    rooms.get(roomId).set(socket.id, { name: displayName, avatar: displayAvatar, bio: displayBio });
+    rooms
+      .get(roomId)
+      .set(socket.id, { name: displayName, avatar: displayAvatar, bio: displayBio, isDeveloper });
 
     // First person into an empty room leads it.
     if (!roomLeaders.has(roomId)) roomLeaders.set(roomId, socket.id);
@@ -184,6 +203,7 @@ io.on("connection", (socket) => {
       name: member?.name || "Guest",
       avatar: member?.avatar || null,
       bio: member?.bio || "",
+      isDeveloper: !!member?.isDeveloper,
       text: trimmed,
       at: Date.now(),
     });

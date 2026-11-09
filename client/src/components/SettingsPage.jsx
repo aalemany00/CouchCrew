@@ -1,15 +1,31 @@
 import { useState } from "react";
 import { navigate } from "../lib/router";
 import { getRecentRooms, removeRecentRoom } from "../lib/recentRooms";
+import { getCachedUser, updateAccountProfile } from "../lib/auth";
 import ProfileForm from "./ProfileForm";
+import AccountSection from "./AccountSection";
 
 export default function SettingsPage() {
   const [recentOpen, setRecentOpen] = useState(false);
   const [recentRooms, setRecentRooms] = useState(getRecentRooms);
+  const [user, setUser] = useState(getCachedUser);
 
   function forget(roomId) {
     removeRecentRoom(roomId);
     setRecentRooms(getRecentRooms());
+  }
+
+  // Signed in: saving the profile form also updates the account (not just
+  // localStorage), so it's there next time you sign in on any device/
+  // browser. Signed out, this is a no-op - the form already saved locally.
+  async function handleProfileSave(profile) {
+    if (!user) return;
+    try {
+      await updateAccountProfile(profile);
+    } catch {
+      // Profile is still saved locally even if the account sync fails
+      // (e.g. server unreachable) - nothing further to surface here.
+    }
   }
 
   return (
@@ -54,7 +70,9 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <ProfileForm />
+      <AccountSection onAccountChange={setUser} />
+
+      <ProfileForm key={user?.id || "anon"} onSave={handleProfileSave} />
     </div>
   );
 }
