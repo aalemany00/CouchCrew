@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
 import { checkRoomExists } from "../lib/roomApi";
 import { ScreenBackdrop, PopcornAndReel, SeatsRow } from "./TheaterArt";
-import CinemaEntrance from "./CinemaEntrance";
+import CinemaEntrance, { CinemaEntranceCompact } from "./CinemaEntrance";
 
 // Theme picking lives only on the Themes tab; the room code (optional) is
 // asked for on the Create screen along with your name, not here - see
@@ -12,14 +12,17 @@ export default function HomePage({ theme = "classic" }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [checking, setChecking] = useState(false);
-  // The Default theme's theater-entrance scene is drawn for desktop widths; on
-  // phones/narrow windows keep the original responsive hero below.
-  const [wide, setWide] = useState(() => window.matchMedia("(min-width: 820px)").matches);
+  // Every theme gets the cinema entrance: the full scene from 820px wide, a
+  // compact stacked version below that. The original drive-in hero further down
+  // is only a last-resort fallback for tiny (< 340px) windows.
+  const query = (min) => window.matchMedia(`(min-width: ${min}px)`);
+  const sizeOf = () => (query(820).matches ? "wide" : query(340).matches ? "compact" : "legacy");
+  const [size, setSize] = useState(sizeOf);
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 820px)");
-    const onChange = (e) => setWide(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const onChange = () => setSize(sizeOf());
+    const mqs = [query(820), query(340)];
+    mqs.forEach((mq) => mq.addEventListener("change", onChange));
+    return () => mqs.forEach((mq) => mq.removeEventListener("change", onChange));
   }, []);
 
   async function handleJoinSubmit(e) {
@@ -42,9 +45,10 @@ export default function HomePage({ theme = "classic" }) {
     navigate(`/r/${trimmed}`);
   }
 
-  if (theme === "classic" && wide) {
+  if (size !== "legacy") {
+    const Entrance = size === "wide" ? CinemaEntrance : CinemaEntranceCompact;
     return (
-      <CinemaEntrance
+      <Entrance
         onCreate={() => navigate("/create")}
         joinCode={joinCode}
         onJoinCodeChange={setJoinCode}
