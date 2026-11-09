@@ -14,8 +14,6 @@ import { tipsDismissed } from "../lib/tips";
 
 const MARQUEE_CLICKS_TO_REVEAL = 5;
 const MARQUEE_CLICK_WINDOW_MS = 2000;
-const HOLD_TO_LEAVE_MS = 3000;
-const LEAVE_MESSAGE_MS = 900;
 
 export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [members, setMembers] = useState([]);
@@ -27,7 +25,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [toast, setToast] = useState(null); // { text }
   const [flourish, setFlourish] = useState(null); // "flicker" | "shake" | "hearts" | "confetti"
   const [creditsVisible, setCreditsVisible] = useState(false);
-  const [leaving, setLeaving] = useState(false); // theatrical pause before actually leaving
+  const [confirmLeave, setConfirmLeave] = useState(false); // "Leave the room?" Yes / No card
   const [roomFull, setRoomFull] = useState(null); // { max } once the server rejects a full room
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(() => !tipsDismissed());
@@ -38,8 +36,6 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const marqueeClicksRef = useRef([]);
   const toastTimeoutRef = useRef(null);
   const flourishTimeoutRef = useRef(null);
-  const holdTimeoutRef = useRef(null);
-  const holdFillRef = useRef(null);
   // The chat-message listener (inside the socket effect below) needs the
   // current theme to check egg trigger words, but theme must NOT be in that
   // effect's dependency array — doing so would reconnect the socket (and
@@ -110,32 +106,16 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     socket.emit("profile:update", { roomId, name, avatar, bio });
   }
 
-  // Hold-to-leave: holding for 3s shows a theatrical pause, then leaves. A
-  // quick click does nothing, so leaving a room someone's enjoying takes a
-  // deliberate beat.
-  function startHold() {
-    const el = holdFillRef.current;
-    if (el) {
-      el.style.transition = "none";
-      el.style.width = "0%";
-      void el.offsetWidth;
-      el.style.transition = `width ${HOLD_TO_LEAVE_MS}ms linear`;
-      el.style.width = "100%";
-    }
-    holdTimeoutRef.current = setTimeout(() => {
-      setLeaving(true);
-      setTimeout(onLeave, LEAVE_MESSAGE_MS);
-    }, HOLD_TO_LEAVE_MS);
-  }
-
-  function cancelHold() {
-    clearTimeout(holdTimeoutRef.current);
-    const el = holdFillRef.current;
-    if (el) {
-      el.style.transition = "width 0.2s ease";
-      el.style.width = "0%";
-    }
-  }
+  // Leaving asks first: "Leave room" opens a Yes / No card (Esc or clicking
+  // outside it means No). Nothing happens until the person picks Yes.
+  useEffect(() => {
+    if (!confirmLeave) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setConfirmLeave(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmLeave]);
 
   useEffect(() => {
     // Re-sends room:join on every connect, not just the first one, so a
@@ -210,7 +190,6 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
       socket.disconnect();
       clearTimeout(toastTimeoutRef.current);
       clearTimeout(flourishTimeoutRef.current);
-      clearTimeout(holdTimeoutRef.current);
     };
   }, [roomId, name]);
 
@@ -241,7 +220,28 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
       <div className="room-view" data-theme={theme}>
       {flourish && <div className={`flourish flourish-${flourish}`} aria-hidden="true" />}
       {toast && <div className="toast">{toast.text}</div>}
-      {leaving && <div className="leave-overlay">Are you sure? It's just getting good...</div>}
+      {confirmLeave && (
+        <div className="leave-confirm" onClick={() => setConfirmLeave(false)}>
+          <div
+            className="leave-confirm-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="leave-confirm-title">Leave the room?</h2>
+            <p>It's just getting good...</p>
+            <div className="leave-confirm-actions">
+              <button type="button" autoFocus onClick={() => setConfirmLeave(false)}>
+                No, stay
+              </button>
+              <button type="button" className="leave" onClick={onLeave}>
+                Yes, leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header>
         <div className="room-header-top">
@@ -270,15 +270,8 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             <button type="button" className="secondary" onClick={copyInviteLink}>
               {linkCopied ? "Link copied!" : "Copy invite link"}
             </button>
-            <button
-              type="button"
-              className="secondary leave hold-leave"
-              onPointerDown={startHold}
-              onPointerUp={cancelHold}
-              onPointerLeave={cancelHold}
-            >
-              <span className="hold-fill" ref={holdFillRef} />
-              <span className="hold-label">Leave room (hold)</span>
+            <button type="button" className="secondary leave" onClick={() => setConfirmLeave(true)}>
+              Leave room
             </button>
           </div>
         </div>
