@@ -9,6 +9,8 @@ import VideoPanel from "./VideoPanel";
 import WatchPlayer from "./WatchPlayer";
 import PixelTheaterScenery from "./PixelTheaterScenery";
 import RoomSettingsDrawer from "./RoomSettingsDrawer";
+import RoomTips from "./RoomTips";
+import { tipsDismissed } from "../lib/tips";
 
 const MARQUEE_CLICKS_TO_REVEAL = 5;
 const MARQUEE_CLICK_WINDOW_MS = 2000;
@@ -19,6 +21,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [members, setMembers] = useState([]);
   const [leaderId, setLeaderId] = useState(null);
   const [theme, setTheme] = useState("classic");
+  const [title, setTitle] = useState("");
   const [connected, setConnected] = useState(socket.connected);
   const [linkCopied, setLinkCopied] = useState(false);
   const [toast, setToast] = useState(null); // { text }
@@ -27,6 +30,7 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
   const [leaving, setLeaving] = useState(false); // theatrical pause before actually leaving
   const [roomFull, setRoomFull] = useState(null); // { max } once the server rejects a full room
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(() => !tipsDismissed());
 
   const amLeader = connected && leaderId === socket.id;
   const videoPanelRef = useRef(null);
@@ -77,6 +81,11 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
 
   function transferLeader(toSocketId) {
     socket.emit("leader:transfer", { roomId, toSocketId });
+  }
+
+  // Leader-only: gives the room a display name (the link/code stays the same).
+  function renameRoom(nextTitle) {
+    socket.emit("room:rename", { roomId, title: nextTitle });
   }
 
   function setRoomTheme(nextTheme) {
@@ -146,9 +155,10 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
     function handleDisconnect() {
       setConnected(false);
     }
-    function handleJoined({ members, leaderId, theme: serverTheme }) {
+    function handleJoined({ members, leaderId, theme: serverTheme, title: serverTitle }) {
       setMembers(members);
       setLeaderId(leaderId);
+      setTitle(serverTitle || "");
       if (serverTheme) setTheme(serverTheme);
       // Applying a theme chosen on the Home/Themes page before creating a
       // brand-new room — only makes sense if we're its leader (i.e. we just
@@ -159,9 +169,10 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
         socket.emit("theme:set", { roomId, theme: wanted });
       }
     }
-    function handlePresence({ members, leaderId, theme }) {
+    function handlePresence({ members, leaderId, theme, title: serverTitle }) {
       setMembers(members);
       setLeaderId(leaderId);
+      setTitle(serverTitle || "");
       if (theme) setTheme(theme);
     }
     function handleRoomFull({ max }) {
@@ -243,9 +254,19 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
             ☰
           </button>
           <h1 className="marquee-title" onClick={handleMarqueeClick}>
-            Room: {roomId}
+            {title || `Room: ${roomId}`}
           </h1>
           <div className="room-header-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setTipsOpen((v) => !v)}
+              aria-label="How this room works"
+              aria-expanded={tipsOpen}
+              title="How this room works"
+            >
+              ?
+            </button>
             <button type="button" className="secondary" onClick={copyInviteLink}>
               {linkCopied ? "Link copied!" : "Copy invite link"}
             </button>
@@ -266,8 +287,12 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
           <p className="credits">Directed by Adrian · Henry · John — CouchCrew Pictures</p>
         )}
 
+        {title && <p className="room-code-line">Room code: {roomId}</p>}
+
         {!connected && <p className="reconnecting">Reconnecting...</p>}
       </header>
+
+      {tipsOpen && <RoomTips amLeader={amLeader} onClose={() => setTipsOpen(false)} />}
 
       <RoomSettingsDrawer
         open={settingsOpen}
@@ -276,6 +301,11 @@ export default function RoomView({ roomId, name, initialTheme, onLeave }) {
         leaderId={leaderId}
         amLeader={amLeader}
         theme={theme}
+        roomId={roomId}
+        title={title}
+        onRename={renameRoom}
+        onCopyLink={copyInviteLink}
+        linkCopied={linkCopied}
         onSetTheme={setRoomTheme}
         onTransferLeader={transferLeader}
         onProfileSave={handleProfileSave}
