@@ -885,8 +885,8 @@ export default function WatchPlayer({ roomId, isLeader, onShareScreen }) {
       ) : provider === "screenshare" ? (
         <p className="room-tag">
           {isLeader
-            ? "Sharing your screen — see Video & Screen Share below."
-            : "The leader is sharing their screen — see Video & Screen Share below."}
+            ? "Sharing your screen — it's on the big screen."
+            : "The leader is sharing their screen — it's on the big screen."}
         </p>
       ) : (
         <p className="room-tag">Only the room leader can choose what to play.</p>

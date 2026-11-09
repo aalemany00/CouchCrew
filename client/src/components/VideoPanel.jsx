@@ -309,6 +309,7 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
   const [local, setLocal] = useState({ stream: null, mic: false, cam: false, screen: null, micId: "", camId: "" });
   const [peerList, setPeerList] = useState([]);
   const [showDevices, setShowDevices] = useState(false);
+  const [viewMovie, setViewMovie] = useState(false); // local: look at the movie instead of the shared screen
   const [speakerId, setSpeakerId] = useState(loadSpeakerPref);
   // How I hear each other person (mute / volume), by their socket id.
   const [listenPrefs, setListenPrefs] = useState({});
@@ -745,6 +746,9 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
   const canShareScreen = !!navigator.mediaDevices?.getDisplayMedia;
   const failed = peerList.some((p) => p.connState === "failed");
   const someoneSharing = !!local.screen || peerList.some((p) => p.screen);
+  useEffect(() => {
+    if (!someoneSharing) setViewMovie(false); // a new share always starts on the shared screen
+  }, [someoneSharing]);
 
   return (
     <div className="video-panel">
@@ -783,22 +787,31 @@ const VideoPanel = forwardRef(function VideoPanel({ roomId }, ref) {
               Can&apos;t connect directly to someone — one of your networks may block calls like this.
             </p>
           )}
-          <div className={`video-grid${someoneSharing ? " has-screen" : ""}`}>
-            {local.screen && <Tile stream={local.screen} name={myName} muted videoOn screen />}
-            {peerList
-              .filter((p) => p.screen)
-              .map((p) => (
-                <Tile
-                  key={`${p.id}-screen`}
-                  stream={p.screen}
-                  name={p.name}
-                  videoOn
-                  screen
-                  sinkId={speakerId}
-                  listen={listenFor(p.id)}
-                  onListenChange={(patch) => changeListen(p.id, patch)}
-                />
-              ))}
+          {someoneSharing && (
+            <div className={`screen-tiles${viewMovie ? " away" : ""}`}>
+              {local.screen && <Tile stream={local.screen} name={myName} muted videoOn screen />}
+              {peerList
+                .filter((p) => p.screen)
+                .map((p) => (
+                  <Tile
+                    key={`${p.id}-screen`}
+                    stream={p.screen}
+                    name={p.name}
+                    videoOn
+                    screen
+                    sinkId={speakerId}
+                    listen={listenFor(p.id)}
+                    onListenChange={(patch) => changeListen(p.id, patch)}
+                  />
+                ))}
+            </div>
+          )}
+          {someoneSharing && (
+            <button type="button" className="screen-switch secondary" onClick={() => setViewMovie((v) => !v)}>
+              {viewMovie ? "🖥 Show shared screen" : "🎬 Show movie"}
+            </button>
+          )}
+          <div className="video-grid">
             <Tile
               stream={local.stream}
               name={`${myName} (you)`}
